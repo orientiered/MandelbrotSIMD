@@ -8,8 +8,8 @@
 
 int main(int argc, const char *argv[]) {
 
-    const int WIDTH = 1920;
-    const int HEIGHT = 1080;
+    const int WIDTH = 800;
+    const int HEIGHT = 600;
     mdContext_t md = mdContextCtor(WIDTH, HEIGHT);
 
 
@@ -45,7 +45,7 @@ int main(int argc, const char *argv[]) {
         windowHandleEvents(&context, &md);
 
         sf::Time t1 = clock.getElapsedTime();
-        calculateMandelbrot(mdContextUnpack(md));
+        calculateMandelbrotOptimized(mdContextUnpack(md));
 
         sf::Time t2 = clock.getElapsedTime();
         windowDraw(&context, md);
