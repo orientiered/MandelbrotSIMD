@@ -16,10 +16,13 @@ ifeq ($(origin CC),default)
 	CC=g++
 endif
 
-mandelbrot.exe: build/main.o build/mandelbrot.o
+mandelbrot.exe: build/main.o build/mandelbrot.o build/window.o
 	$(CC) $(CFLAGS) $^ $(addprefix -l,$(LINK_LIBS)) -o $@
 
 build/main.o: main.cpp
+	$(CC) $(CFLAGS) -c $< -o$@
+
+build/window.o: window.cpp
 	$(CC) $(CFLAGS) -c $< -o$@
 
 build/mandelbrot.o: mandelbrot.cpp

@@ -1,109 +1,15 @@
 #include <SFML/Graphics.hpp>
-#include <SFML/Window/VideoMode.hpp>
+#include <SFML/System/Clock.hpp>
+#include <SFML/System/Time.hpp>
 #include <stdio.h>
 
 #include <mandelbrot.h>
-
-
-typedef struct {
-    sf::RenderWindow window;
-    sf::Texture mdTexture;
-    sf::Sprite  mdSprite;
-
-    sf::Vector2f oldMousePos;
-    bool mousePressed;
-} windowContext_t;
-
-int windowCtor(windowContext_t *context, const int WIDTH, const int HEIGHT, const char *title);
-
-int windowCtor(windowContext_t *context, const int WIDTH, const int HEIGHT, const char *title) {
-    context->window.create(sf::VideoMode(WIDTH, HEIGHT), title);
-    context->mdTexture.create(WIDTH, HEIGHT);
-    context->mdSprite.setTexture(context->mdTexture, true);
-
-    context->mousePressed = false;
-    return 0;
-}
-
-int windowHandleEvents(windowContext_t *context, mdContext_t *md);
-
-int windowHandleEvents(windowContext_t *context, mdContext_t *md) {
-    sf::Event event;
-    while (context->window.pollEvent(event) ) {
-        switch(event.type) {
-            case sf::Event::Closed:
-                context->window.close();
-                break;
-
-            case sf::Event::MouseButtonPressed:
-                if (event.mouseButton.button == sf::Mouse::Left) {
-                    context->mousePressed = true;
-                    context->oldMousePos.x = event.mouseButton.x;
-                    context->oldMousePos.y = event.mouseButton.y;
-                }
-                break;
-
-            case sf::Event::MouseButtonReleased:
-                if (event.mouseButton.button == sf::Mouse::Left) {
-                   context->mousePressed = false;
-                }
-                break;
-
-            case sf::Event::MouseMoved:
-                if (context->mousePressed) {
-                    md->centerX -= (event.mouseMove.x - context->oldMousePos.x) * md->scale;
-                    md->centerY += (event.mouseMove.y - context->oldMousePos.y) * md->scale;
-                    context->oldMousePos.x = event.mouseMove.x;
-                    context->oldMousePos.y = event.mouseMove.y;
-                }
-                break;
-
-            case sf::Event::MouseWheelScrolled:
-            {
-                md_float multiplier = (event.mouseWheelScroll.delta > 0) ? 0.8 : (-1.0/0.8);
-                md->scale *= event.mouseWheelScroll.delta * multiplier;
-                break;
-            }
-
-            case sf::Event::KeyPressed:
-                switch(event.key.code) {
-                    case sf::Keyboard::Up:
-                        md->scale *= 0.8;
-                        break;
-                    case sf::Keyboard::Down:
-                        md->scale *= 1.0/0.8;
-                        break;
-                    case sf::Keyboard::Escape:
-                        context->window.close();
-                        break;
-                    default:
-                        break;
-                }
-                break;
-
-            default:
-                break;
-        }
-    }
-
-    return 0;
-}
-
-int windowDraw(windowContext_t *context, const mdContext_t md);
-
-int windowDraw(windowContext_t *context, const mdContext_t md) {
-    context->mdTexture.update((sf::Uint8 *)md.screen);
-    context->window.clear();
-    context->window.draw(context->mdSprite);
-    context->window.display();
-
-    return 0;
-}
+#include <window.h>
 
 int main(int argc, const char *argv[]) {
 
-    const int WIDTH = 800;
-    const int HEIGHT = 600;
+    const int WIDTH = 1920;
+    const int HEIGHT = 1080;
     mdContext_t md = mdContextCtor(WIDTH, HEIGHT);
 
 
@@ -113,10 +19,18 @@ int main(int argc, const char *argv[]) {
 
     uint32_t total_rendered = 0;
 
+    sf::Clock clock;
+
     if (test_mode) {
+        clock.restart();
         for (; total_rendered < test_count; total_rendered++) {
             calculateMandelbrot(mdContextUnpack(md));
         }
+        sf::Time elapsedTime = clock.getElapsedTime();
+        printf("Test completed!\n\n");
+        printf("Rendered %d frames within %.3f seconds\n", total_rendered, elapsedTime.asSeconds());
+        printf("FPS = %.2f, MSPF = %.2f\n", (float)total_rendered / elapsedTime.asSeconds(),
+                                            (float)elapsedTime.asMilliseconds() / total_rendered);
         mdContextDtor(&md);
         return 0;
     }
@@ -124,19 +38,30 @@ int main(int argc, const char *argv[]) {
     windowContext_t context;
     windowCtor(&context, WIDTH, HEIGHT, "Mandelbrot");
 
+    sf::Time totalDrawTime   = sf::microseconds(0);
+    sf::Time totalRenderTime = sf::microseconds(0);
 
     while (context.window.isOpen()) {
         windowHandleEvents(&context, &md);
 
+        sf::Time t1 = clock.getElapsedTime();
         calculateMandelbrot(mdContextUnpack(md));
 
+        sf::Time t2 = clock.getElapsedTime();
         windowDraw(&context, md);
+
+        sf::Time t3 = clock.getElapsedTime();
         total_rendered++;
-        fprintf(stderr, "\r%u        " , total_rendered);
+        totalDrawTime   += t3 - t2;
+        totalRenderTime += t2 - t1;
+        fprintf(stderr, "\r%u; render: %d draw: %d" , total_rendered, (t2-t1).asMilliseconds(), (t3-t2).asMilliseconds());
 
     }
 
-
+    printf("\n\nStats:\n");
+    printf("Total frames: %d\n", total_rendered);
+    printf("Mean render time: %.2f ms\n", (float) totalRenderTime.asMilliseconds() / total_rendered);
+    printf("Mean draw   time: %.2f ms\n", (float) totalDrawTime.asMilliseconds()   / total_rendered);
     mdContextDtor(&md);
     return 0;
 }
