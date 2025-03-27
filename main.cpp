@@ -8,8 +8,8 @@
 
 int main(int argc, const char *argv[]) {
 
-    const int WIDTH = 800;
-    const int HEIGHT = 600;
+    const int WIDTH = 1920;
+    const int HEIGHT = 1080;
     mdContext_t md = mdContextCtor(WIDTH, HEIGHT);
 
 
@@ -24,7 +24,7 @@ int main(int argc, const char *argv[]) {
     if (test_mode) {
         clock.restart();
         for (; total_rendered < test_count; total_rendered++) {
-            calculateMandelbrot(mdContextUnpack(md));
+            calculateMandelbrot(md);
         }
         sf::Time elapsedTime = clock.getElapsedTime();
         printf("Test completed!\n\n");
@@ -45,7 +45,8 @@ int main(int argc, const char *argv[]) {
         windowHandleEvents(&context, &md);
 
         sf::Time t1 = clock.getElapsedTime();
-        calculateMandelbrotOptimized(mdContextUnpack(md));
+        calculateMandelbrotOptimized(md);
+        convertItersToColor(md);
 
         sf::Time t2 = clock.getElapsedTime();
         windowDraw(&context, md);

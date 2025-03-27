@@ -15,6 +15,7 @@ typedef float md_float;
 /// @brief Context with essential info to calculate mandlebrot set
 typedef struct {
     uint32_t *screen;           ///< Array of rgba pixels
+    uint32_t *escapeN;          ///< Array with escape iterations for every pixel
     int WIDTH, HEIGHT;          ///< Width and height of the screen
     md_float centerX, centerY;  ///< Coordinates of center position on complex plane
     md_float scale;             ///< Scale = (unit length) / (pixels per unit length)
@@ -30,6 +31,8 @@ const md_float MD_DEFAULT_X = -0.5;
 const md_float MD_DEFAULT_Y =  0.0;
 
 const md_float MD_DEFAULT_PLANE_WIDTH = 3.5;
+
+const md_float MD_ESCAPE_RADIUS = 10.0;
 /*================================ FUNCTIONS ============================================*/
 
 /// @brief Create mandelbrot context
@@ -39,20 +42,14 @@ mdContext_t mdContextCtor(int WIDTH, int HEIGHT);
 /// @brief Destroy mandelbrot context and free resources
 int mdContextDtor(mdContext_t *context);
 
-/// @brief Calculate colors for each pixel
-int calculateMandelbrot(uint32_t *pixels,
-                        const md_float centerX, const md_float centerY,
-                        const md_float scale,  // length per pixel
-                        const int WIDTH, const int HEIGHT);
+/// @brief Calculate escape iteration for each pixel
+int calculateMandelbrot(const mdContext_t md);
 
-int calculateMandelbrotOptimized(uint32_t *pixels,
-                        const md_float centerX, const md_float centerY,
-                        const md_float scale,
-                        const int WIDTH, const int HEIGHT);
+/// @brief Calculate escape iteration for each pixel with optimization
+int calculateMandelbrotOptimized(const mdContext_t md);
 
-/// @brief Unpack context values to use in calculateMandelbrot function
-/// Usage example:
-/// calculateMandelbrot(mdContextUnpack(mandlebrot_context));
-#define mdContextUnpack(context) context.screen, context.centerX, context.centerY, context.scale, context.WIDTH, context.HEIGHT
+/// @brief Convert iters from md.escapeN to pixels in md.screen
+int convertItersToColor(const mdContext_t md);
+
 
 #endif
