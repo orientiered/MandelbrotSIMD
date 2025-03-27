@@ -69,9 +69,12 @@ int calculateMandelbrot(const mdContext_t md) {
     return 0;
 }
 
+#include <immintrin.h>
+
 const int PACKED_SIZE = 128/8 / sizeof(md_float);
 typedef md_float pmd_float[PACKED_SIZE];
 typedef int   pcmp[PACKED_SIZE]; // packed cmp array
+
 
 inline void pmd_float_add(pmd_float res, const pmd_float a, const pmd_float b) {
     for (int i = 0; i < PACKED_SIZE; i++) res[i] = a[i] + b[i];
@@ -109,40 +112,42 @@ int calculateMandelbrotOptimized(const mdContext_t md) {
     const md_float ESCAPE_RADIUS2 = MD_ESCAPE_RADIUS * MD_ESCAPE_RADIUS;
 
     md_float dx = scale;
-    pmd_float initDelta = {0};
+    alignas(16) pmd_float initDelta__;
     for (int i = 0; i < PACKED_SIZE; i++) {
-        initDelta[i] = scale * i;
+        initDelta__[i] = scale * i;
     }
+    __m128 initDelta = _mm_load_ps(initDelta__);
 
     for (int iy = 0; iy < HEIGHT; iy++) {
 //
 //         md_float x0 = centerX - scale * WIDTH / 2,
 //                  y0 = centerY + (HEIGHT/2 - iy) * scale;
 
-        pmd_float y0 = {0};
-        pmd_float_set(y0, centerY + (HEIGHT/2 - iy) * scale);
-
+        __m128 y0 = _mm_set_ps1(centerY + (HEIGHT / 2 - iy) * scale);
+        // pmd_float_set(y0, centerY + (HEIGHT/2 - iy) * scale);
         for (int ix = 0; ix < WIDTH; ix+= PACKED_SIZE) {
-            pmd_float x0 = {0};
-            pmd_float_set(x0, centerX - scale*WIDTH / 2 + ix * scale);
-            pmd_float_add(x0, x0, initDelta);
+            __m128 x0 = _mm_set_ps1(centerX - scale*WIDTH / 2 + ix * scale);
+            x0 = _mm_add_ps(x0, initDelta);
 
             /*
                 z' = z^2 + z_0 = (x+iy)^2 + x_0 + iy_0 = x^2 - y^2 + x_0 + i(2x*y + y_0)
                 x' = x^2 - y^2 + x0
                 y' = 2xy + y_0
             */
-            pmd_float x; pmd_float_copy(x, x0);
-            pmd_float y; pmd_float_copy(y, y0);
+            __m128 x = x0;
+            __m128 y = y0;
 
-            int iter[PACKED_SIZE] = {0};
+            // int iter[PACKED_SIZE] = {0};
+            __m128i iters = {0};
             for (int i = 0; i < MD_MAX_ITER; i++) {
-                pmd_float x2 = {0}; pmd_float_mul(x2, x, x);
-                pmd_float y2 = {0}; pmd_float_mul(y2, y, y);
-                pmd_float xy_2; pmd_float_mul(xy_2, x, y); pmd_float_add(xy_2, xy_2, xy_2);
+                __m128 x2   = _mm_mul_ps(x, x);
+                __m128 y2   = _mm_mul_ps(y, y);
+                __m128 xy_2 = _mm_mul_ps(x, y);
+                xy_2 = _mm_add_ps(xy_2, xy_2);
                 // md_float x2 = x*x, y2 = y*y, xy_2 = 2*x*y;
 
-                pmd_float r2; pmd_float_add(r2, x2, y2);
+                __m128 r2 = _mm_add_ps(x2, y2);
+                
                 pcmp cmp; pmd_float_cmp(cmp, r2, ESCAPE_RADIUS2);
 
                 // if (x2 + y2 > ESCAPE_RADIUS2)
@@ -154,12 +159,10 @@ int calculateMandelbrotOptimized(const mdContext_t md) {
                 }
                 if (!mask) break;
 
-                pmd_float_copy(x, x2);
-                pmd_float_sub(x, x, y2);
-                pmd_float_add(x, x, x0);
+                x = _mm_sub_ps(x2,y2);
+                x = _mm_add_ps(x, x0);
 
-                pmd_float_copy(y, xy_2);
-                pmd_float_add(y, y, y0);
+                y = _mm_add_ps(xy_2, y0);
                 // x = x2 - y2 + x0;
                 // y = xy_2    + y0;
             }
