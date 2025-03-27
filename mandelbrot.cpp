@@ -138,7 +138,8 @@ int calculateMandelbrotOptimized(const mdContext_t md) {
             __m128 y = y0;
 
             // int iter[PACKED_SIZE] = {0};
-            __m128i iters = {0};
+            int iter[PACKED_SIZE] = {0};
+
             for (int i = 0; i < MD_MAX_ITER; i++) {
                 __m128 x2   = _mm_mul_ps(x, x);
                 __m128 y2   = _mm_mul_ps(y, y);
@@ -148,16 +149,16 @@ int calculateMandelbrotOptimized(const mdContext_t md) {
 
                 __m128 r2 = _mm_add_ps(x2, y2);
                 
-                pcmp cmp; pmd_float_cmp(cmp, r2, ESCAPE_RADIUS2);
+                __m128 escapeR2 = _mm_set_ps1(ESCAPE_RADIUS2);
+                __m128 cmp = _mm_cmple_ps(r2, escapeR2);
+                int mask = _mm_movemask_ps(cmp);
 
-                // if (x2 + y2 > ESCAPE_RADIUS2)
-                    // break;
-                uint64_t mask = (1 << PACKED_SIZE) - 1;
-                for (int j = 0; j < PACKED_SIZE; j++) {
-                    mask = mask >> (1- !!cmp[j]);
-                    iter[j] += !!cmp[j];
-                }
                 if (!mask) break;
+
+                for (int j = 0; j < PACKED_SIZE; j++) {
+                    iter[j] += mask & 1;
+                    mask >>= 1;
+                }
 
                 x = _mm_sub_ps(x2,y2);
                 x = _mm_add_ps(x, x0);
@@ -182,14 +183,14 @@ int calculateMandelbrotOptimized(const mdContext_t md) {
 
 int convertItersToColor(const mdContext_t md) {
     for (int idx = 0; idx < md.WIDTH * md.HEIGHT; idx++) {
-        int escN = md.escapeN[idx];
+        int iter = md.escapeN[idx];
 
-        if (escN == MD_MAX_ITER)
+        if (iter == MD_MAX_ITER)
             md.screen[idx] = 0; // Black 
         else {
-            uint8_t red   = MD_MAX_ITER - escN;
-            uint8_t green = 95*(1+sin(sqrt(escN)/1.1));
-            uint8_t blue  = 200 - 200*cosf(escN / 230);
+            uint8_t red   = MD_MAX_ITER - iter;
+            uint8_t green = 95*(1+sin(sqrt(iter)/1.1));
+            uint8_t blue  = 40. * logf(iter);
 
             md.screen[idx] = generateColor(red, green, blue);
         }
