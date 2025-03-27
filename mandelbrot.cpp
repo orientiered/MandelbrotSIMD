@@ -69,36 +69,57 @@ int calculateMandelbrot(const mdContext_t md) {
     return 0;
 }
 
+/*=============================== PREPROCESSOR MAGIC ===========================================*/
+/*=============================== ONE INTERFACE FOR SSE, AVX2 and AVX512 =======================*/
 #include <immintrin.h>
+// TODO: add support for double 
+#define MM_SIZE 512    // size of current mm register
+#define PACKED_SIZE MM_SIZE / 8 / sizeof(md_float)
 
-const int PACKED_SIZE = 128/8 / sizeof(md_float);
+#if MM_SIZE == 128
+    typedef __m128 MM_t; 
+    
+    #define _MM_LOAD(ptr) _mm_load_ps(ptr)
+
+    #define _MM_SET1(val) _mm_set_ps1(val)
+
+    #define _MM_ADD(a, b) _mm_add_ps(a, b)
+    #define _MM_SUB(a, b) _mm_sub_ps(a, b)
+    #define _MM_MUL(a, b) _mm_mul_ps(a, b)
+    #define _MM_CMPLE_MOVEMASK(a, b) _mm_movemask_ps( _mm_cmple_ps(a,b) )   // compare a <= b and create mask
+
+
+#elif MM_SIZE == 256
+    typedef __m256 MM_t;
+
+    #define _MM_LOAD(ptr) _mm256_load_ps(ptr)
+
+    #define _MM_SET1(val) _mm256_set1_ps(val)
+
+    #define _MM_ADD(a, b) _mm256_add_ps(a, b)
+    #define _MM_SUB(a, b) _mm256_sub_ps(a, b)
+    #define _MM_MUL(a, b) _mm256_mul_ps(a, b)
+
+    #define _MM_CMPLE_MOVEMASK(a, b) _mm256_movemask_ps( _mm256_cmp_ps(a,b, _CMP_LE_OS) )
+
+#elif MM_SIZE == 512
+    typedef __m512 MM_t;
+
+    #define _MM_LOAD(ptr) _mm512_load_ps(ptr)
+
+    #define _MM_SET1(val) _mm512_set1_ps(val)
+
+    #define _MM_ADD(a, b) _mm512_add_ps(a, b)
+    #define _MM_SUB(a, b) _mm512_sub_ps(a, b)
+    #define _MM_MUL(a, b) _mm512_mul_ps(a, b)
+
+    #define _MM_CMPLE_MOVEMASK(a, b) _mm512_cmp_ps_mask(a,b, _CMP_LE_OS)
+
+
+#endif
+
 typedef md_float pmd_float[PACKED_SIZE];
-typedef int   pcmp[PACKED_SIZE]; // packed cmp array
 
-
-inline void pmd_float_add(pmd_float res, const pmd_float a, const pmd_float b) {
-    for (int i = 0; i < PACKED_SIZE; i++) res[i] = a[i] + b[i];
-}
-
-inline void pmd_float_sub(pmd_float res, const pmd_float a, const pmd_float b) {
-    for (int i = 0; i < PACKED_SIZE; i++) res[i] = a[i] - b[i];
-}
-
-inline void pmd_float_mul(pmd_float res, const pmd_float a, const pmd_float b) {
-    for (int i = 0; i < PACKED_SIZE; i++) res[i] = a[i] * b[i];
-}
-
-inline void pmd_float_cmp(int *cmp, const pmd_float a, const md_float b) {
-    for (int i = 0; i < PACKED_SIZE; i++) cmp[i] = a[i] < b;
-}
-
-inline void pmd_float_set(pmd_float a, const md_float v) {
-    for (int i = 0; i < PACKED_SIZE; i++) a[i] = v;
-}
-
-inline void pmd_float_copy(pmd_float a, const pmd_float b) {
-    for (int i = 0; i < PACKED_SIZE; i++) a[i] = b[i];
-}
 
 int calculateMandelbrotOptimized(const mdContext_t md) {
 
@@ -110,53 +131,52 @@ int calculateMandelbrotOptimized(const mdContext_t md) {
 
     /*Points never come back after ESCAPE_RADIUS*/
     const md_float ESCAPE_RADIUS2 = MD_ESCAPE_RADIUS * MD_ESCAPE_RADIUS;
+    const MM_t escapeR2 = _MM_SET1(ESCAPE_RADIUS2);
 
-    md_float dx = scale;
-    alignas(16) pmd_float initDelta__;
+
+    const md_float dx = scale;
+    alignas(64) pmd_float initDelta__;
     for (int i = 0; i < PACKED_SIZE; i++) {
         initDelta__[i] = scale * i;
     }
-    __m128 initDelta = _mm_load_ps(initDelta__);
+    const MM_t initDelta = _MM_LOAD(initDelta__);
 
     for (int iy = 0; iy < HEIGHT; iy++) {
 //
 //         md_float x0 = centerX - scale * WIDTH / 2,
 //                  y0 = centerY + (HEIGHT/2 - iy) * scale;
 
-        __m128 y0 = _mm_set_ps1(centerY + (HEIGHT / 2 - iy) * scale);
+        MM_t y0 = _MM_SET1(centerY + (HEIGHT / 2 - iy) * scale);
         // pmd_float_set(y0, centerY + (HEIGHT/2 - iy) * scale);
         for (int ix = 0; ix < WIDTH; ix+= PACKED_SIZE) {
-            __m128 x0 = _mm_set_ps1(centerX - scale*WIDTH / 2 + ix * scale);
-            x0 = _mm_add_ps(x0, initDelta);
+            MM_t x0 = _MM_SET1(centerX - scale*WIDTH / 2 + ix * scale);
+            x0 = _MM_ADD(x0, initDelta);
 
             /*
                 z' = z^2 + z_0 = (x+iy)^2 + x_0 + iy_0 = x^2 - y^2 + x_0 + i(2x*y + y_0)
                 x' = x^2 - y^2 + x0
                 y' = 2xy + y_0
             */
-            __m128 x = x0;
-            __m128 y = y0;
+            MM_t x = x0;
+            MM_t y = y0;
 
             // int iter[PACKED_SIZE] = {0};
             int iter[PACKED_SIZE] = {0};
 
             for (int i = 0; i < MD_MAX_ITER; i++) {
                 /* md_float x2 = x*x, y2 = y*y, xy_2 = 2*x*y; */
-                __m128 x2   = _mm_mul_ps(x, x);
-                __m128 y2   = _mm_mul_ps(y, y);
-                __m128 xy_2 = _mm_mul_ps(x, y);
-                xy_2 = _mm_add_ps(xy_2, xy_2);
+                MM_t x2   = _MM_MUL(x, x);
+                MM_t y2   = _MM_MUL(y, y);
+                MM_t xy_2 = _MM_MUL(x, y);
+                xy_2 = _MM_ADD(xy_2, xy_2);
 
-                __m128 r2 = _mm_add_ps(x2, y2);
+                MM_t r2 = _MM_ADD(x2, y2);
                 
                 // Filling xmm with ESCAPE_RADIUS^2
-                __m128 escapeR2 = _mm_set_ps1(ESCAPE_RADIUS2);
                 // Comparing r^2 <= ESCAPE_RADIUS^2
                 // cmp = 0xFFFFFFF for true and 0x0 for false 
-                __m128 cmp = _mm_cmple_ps(r2, escapeR2);
-
-                int mask = _mm_movemask_ps(cmp);
                 // mask_i = high bit of i-ый float in cmp
+                int mask = _MM_CMPLE_MOVEMASK(r2, escapeR2);
 
                 if (!mask) break;
                 // if mask = 0 => all points escaped
@@ -167,11 +187,11 @@ int calculateMandelbrotOptimized(const mdContext_t md) {
                 }
 
                 // x = x2 - y2 + x0;
-                x = _mm_sub_ps(x2,y2);
-                x = _mm_add_ps(x, x0);
+                x = _MM_SUB(x2,y2);
+                x = _MM_ADD(x, x0);
 
                 // y = xy_2    + y0;
-                y = _mm_add_ps(xy_2, y0);
+                y = _MM_ADD(xy_2, y0);
             }
 
             // Writing number of iterations to the memory
