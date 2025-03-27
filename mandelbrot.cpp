@@ -73,27 +73,27 @@ const int PACKED_SIZE = 128/8 / sizeof(md_float);
 typedef md_float pmd_float[PACKED_SIZE];
 typedef int   pcmp[PACKED_SIZE]; // packed cmp array
 
-inline void pmd_float_add(pmd_float res, const pmd_float a, const pmd_float b) {
+static inline void pmd_float_add(pmd_float res, const pmd_float a, const pmd_float b) {
     for (int i = 0; i < PACKED_SIZE; i++) res[i] = a[i] + b[i];
 }
 
-inline void pmd_float_sub(pmd_float res, const pmd_float a, const pmd_float b) {
+static inline void pmd_float_sub(pmd_float res, const pmd_float a, const pmd_float b) {
     for (int i = 0; i < PACKED_SIZE; i++) res[i] = a[i] - b[i];
 }
 
-inline void pmd_float_mul(pmd_float res, const pmd_float a, const pmd_float b) {
+static inline void pmd_float_mul(pmd_float res, const pmd_float a, const pmd_float b) {
     for (int i = 0; i < PACKED_SIZE; i++) res[i] = a[i] * b[i];
 }
 
-inline void pmd_float_cmp(int *cmp, const pmd_float a, const md_float b) {
+static inline void pmd_float_cmp(int *cmp, const pmd_float a, const md_float b) {
     for (int i = 0; i < PACKED_SIZE; i++) cmp[i] = a[i] < b;
 }
 
-inline void pmd_float_set(pmd_float a, const md_float v) {
+static inline void pmd_float_set(pmd_float a, const md_float v) {
     for (int i = 0; i < PACKED_SIZE; i++) a[i] = v;
 }
 
-inline void pmd_float_copy(pmd_float a, const pmd_float b) {
+static inline void pmd_float_copy(pmd_float a, const pmd_float b) {
     for (int i = 0; i < PACKED_SIZE; i++) a[i] = b[i];
 }
 
