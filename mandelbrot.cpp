@@ -69,33 +69,21 @@ int calculateMandelbrot(const mdContext_t md) {
     return 0;
 }
 
-const int PACKED_SIZE = 128/8 / sizeof(md_float);
+#define PACKED_SIZE 32
 typedef md_float pmd_float[PACKED_SIZE];
 typedef int   pcmp[PACKED_SIZE]; // packed cmp array
 
-static inline void pmd_float_add(pmd_float res, const pmd_float a, const pmd_float b) {
-    for (int i = 0; i < PACKED_SIZE; i++) res[i] = a[i] + b[i];
-}
+#define pmd_float_add(res, a, b) for (int i = 0; i < PACKED_SIZE; i++) res[i] = a[i] + b[i];
 
-static inline void pmd_float_sub(pmd_float res, const pmd_float a, const pmd_float b) {
-    for (int i = 0; i < PACKED_SIZE; i++) res[i] = a[i] - b[i];
-}
+#define pmd_float_sub(res, a, b) for (int i = 0; i < PACKED_SIZE; i++) res[i] = a[i] - b[i];
 
-static inline void pmd_float_mul(pmd_float res, const pmd_float a, const pmd_float b) {
-    for (int i = 0; i < PACKED_SIZE; i++) res[i] = a[i] * b[i];
-}
+#define pmd_float_mul(res, a, b) for (int i = 0; i < PACKED_SIZE; i++) res[i] = a[i] * b[i];
 
-static inline void pmd_float_cmp(int *cmp, const pmd_float a, const md_float b) {
-    for (int i = 0; i < PACKED_SIZE; i++) cmp[i] = a[i] < b;
-}
+#define pmd_float_cmp(cmp, a, v) for (int i = 0; i < PACKED_SIZE; i++) cmp[i] = a[i] < v;
 
-static inline void pmd_float_set(pmd_float a, const md_float v) {
-    for (int i = 0; i < PACKED_SIZE; i++) a[i] = v;
-}
+#define pmd_float_set(a, val)    for (int i = 0; i < PACKED_SIZE; i++) a[i] = val;
 
-static inline void pmd_float_copy(pmd_float a, const pmd_float b) {
-    for (int i = 0; i < PACKED_SIZE; i++) a[i] = b[i];
-}
+#define pmd_float_copy(a, b)     for (int i = 0; i < PACKED_SIZE; i++) a[i] = b[i];
 
 int calculateMandelbrotOptimized(const mdContext_t md) {
 
@@ -147,19 +135,26 @@ int calculateMandelbrotOptimized(const mdContext_t md) {
 
                 // if (x2 + y2 > ESCAPE_RADIUS2)
                     // break;
-                uint64_t mask = (1 << PACKED_SIZE) - 1;
+                uint64_t mask = 0;
                 for (int j = 0; j < PACKED_SIZE; j++) {
-                    mask = mask >> (1- !!cmp[j]);
-                    iter[j] += !!cmp[j];
+                    mask <<= 1;
+                    mask += (cmp[j] & 1);
                 }
                 if (!mask) break;
 
-                pmd_float_copy(x, x2);
-                pmd_float_sub(x, x, y2);
-                pmd_float_add(x, x, x0);
+                for (int j = 0; j < PACKED_SIZE; j++) {
+                    iter[j] += (cmp[j] & 1);
+                }
 
-                pmd_float_copy(y, xy_2);
-                pmd_float_add(y, y, y0);
+
+                for (int i = 0; i < PACKED_SIZE; i++) x[i] = x2[i] - y2[i] + x0[i];
+                for (int i = 0; i < PACKED_SIZE; i++) y[i] = xy_2[i]       + y0[i];
+                // pmd_float_copy(x, x2);
+                // pmd_float_sub(x, x, y2);
+                // pmd_float_add(x, x, x0);
+
+                // pmd_float_copy(y, xy_2);
+                // pmd_float_add(y, y, y0);
                 // x = x2 - y2 + x0;
                 // y = xy_2    + y0;
             }
