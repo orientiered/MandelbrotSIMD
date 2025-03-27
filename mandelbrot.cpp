@@ -141,34 +141,40 @@ int calculateMandelbrotOptimized(const mdContext_t md) {
             int iter[PACKED_SIZE] = {0};
 
             for (int i = 0; i < MD_MAX_ITER; i++) {
+                /* md_float x2 = x*x, y2 = y*y, xy_2 = 2*x*y; */
                 __m128 x2   = _mm_mul_ps(x, x);
                 __m128 y2   = _mm_mul_ps(y, y);
                 __m128 xy_2 = _mm_mul_ps(x, y);
                 xy_2 = _mm_add_ps(xy_2, xy_2);
-                // md_float x2 = x*x, y2 = y*y, xy_2 = 2*x*y;
 
                 __m128 r2 = _mm_add_ps(x2, y2);
                 
+                // Filling xmm with ESCAPE_RADIUS^2
                 __m128 escapeR2 = _mm_set_ps1(ESCAPE_RADIUS2);
+                // Comparing r^2 <= ESCAPE_RADIUS^2
+                // cmp = 0xFFFFFFF for true and 0x0 for false 
                 __m128 cmp = _mm_cmple_ps(r2, escapeR2);
+
                 int mask = _mm_movemask_ps(cmp);
+                // mask_i = high bit of i-ый float in cmp
 
                 if (!mask) break;
+                // if mask = 0 => all points escaped
 
                 for (int j = 0; j < PACKED_SIZE; j++) {
-                    iter[j] += mask & 1;
-                    mask >>= 1;
+                    iter[j] += mask & 1;    // incrementing iter if dot has not escaped yet
+                    mask >>= 1;             // prepairing next bit
                 }
 
+                // x = x2 - y2 + x0;
                 x = _mm_sub_ps(x2,y2);
                 x = _mm_add_ps(x, x0);
 
-                y = _mm_add_ps(xy_2, y0);
-                // x = x2 - y2 + x0;
                 // y = xy_2    + y0;
+                y = _mm_add_ps(xy_2, y0);
             }
 
-
+            // Writing number of iterations to the memory
             for (int i = 0; i < PACKED_SIZE; i++) {
                 escapeN[iy*WIDTH + ix + i] = iter[i];
             }
