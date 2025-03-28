@@ -27,7 +27,18 @@ int main(int argc, const char *argv[]) {
             calculateMandelbrot(md);
         }
         sf::Time elapsedTime = clock.getElapsedTime();
-        printf("Test completed!\n\n");
+        printf("Unoptimized\nTest completed!\n\n");
+        printf("Rendered %d frames within %.3f seconds\n", total_rendered, elapsedTime.asSeconds());
+        printf("FPS = %.2f, MSPF = %.2f\n", (float)total_rendered / elapsedTime.asSeconds(),
+                                            (float)elapsedTime.asMilliseconds() / total_rendered);
+
+        total_rendered = 0;
+        clock.restart();
+        for (; total_rendered < test_count; total_rendered++) {
+            calculateMandelbrotOptimized(md);
+        }
+        elapsedTime = clock.getElapsedTime();
+        printf("Optimized\nTest completed!\n\n");
         printf("Rendered %d frames within %.3f seconds\n", total_rendered, elapsedTime.asSeconds());
         printf("FPS = %.2f, MSPF = %.2f\n", (float)total_rendered / elapsedTime.asSeconds(),
                                             (float)elapsedTime.asMilliseconds() / total_rendered);
