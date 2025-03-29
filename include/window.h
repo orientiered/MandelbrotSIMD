@@ -6,7 +6,7 @@ typedef struct {
     sf::Texture mdTexture;
     sf::Sprite  mdSprite;
 
-    sf::Vector2f oldMousePos;
+    sf::Vector2<double> oldMousePos;
     bool mousePressed;
 } windowContext_t;
 

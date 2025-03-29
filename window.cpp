@@ -1,4 +1,7 @@
 #include <SFML/Graphics.hpp>
+#include <SFML/Window/Keyboard.hpp>
+#include <SFML/Window/Clipboard.hpp>
+#include <stdlib.h>
 #include <mandelbrot.h>
 #include <window.h>
 
@@ -52,6 +55,19 @@ int windowHandleEvents(windowContext_t *context, mdContext_t *md) {
 
             case sf::Event::KeyPressed:
                 switch(event.key.code) {
+                    case sf::Keyboard::W:
+                        md->centerY += (double) md->WIDTH / 100 * md->scale;
+                        break;
+                    case sf::Keyboard::A:
+                        md->centerX -= (double) md->WIDTH / 100 * md->scale;
+                        break;
+                    case sf::Keyboard::S:
+                        md->centerY -= (double) md->WIDTH / 100 * md->scale;
+                        break;
+                    case sf::Keyboard::D:
+                        md->centerX += (double) md->WIDTH / 100 * md->scale;
+                        break;
+
                     case sf::Keyboard::Up:
                         md->scale *= 0.8;
                         break;
@@ -61,6 +77,40 @@ int windowHandleEvents(windowContext_t *context, mdContext_t *md) {
                     case sf::Keyboard::Escape:
                         context->window.close();
                         break;
+
+                    case sf::Keyboard::C:
+                    {
+                    // Ctrl + C copies current position and scale to the clipboard
+                        const int MD_POS_SCALE_ACCURACY = 15;
+                        if (event.key.control) {
+                            char pos[MD_POS_SCALE_ACCURACY*4] = "";
+                            sprintf(pos, "%.*f %.*f %.*f", MD_POS_SCALE_ACCURACY, md->centerX,
+                                                           MD_POS_SCALE_ACCURACY, md->centerY,
+                                                           MD_POS_SCALE_ACCURACY, md->scale);
+                            sf::Clipboard::setString(pos);
+                        }
+                    }
+                        break;
+                    case sf::Keyboard::V:
+                    {
+                    // Ctrl + V pastes position and scale from the clipboard
+                        if (event.key.control) {
+                            // Getting string from clipboard and converting to mbs
+                            sf::String pastedString = sf::Clipboard::getString();
+                            const uint32_t *posWstring = pastedString.getData();
+                            char posString[256] = "";
+                            wcstombs(posString, (const wchar_t *) posWstring, 256);
+
+                            printf("Ctrl+V:%s\n\n\n", posString);
+                            double centerX = 0, centerY = 0, scale = 0;
+                            if (sscanf(posString, "%lf %lf %lf", &centerX, &centerY, &scale) == 3) {
+                                md->centerX = centerX;
+                                md->centerY = centerY;
+                                md->scale   = scale;
+                            }
+                        }
+                        break;
+                    }
                     default:
                         break;
                 }

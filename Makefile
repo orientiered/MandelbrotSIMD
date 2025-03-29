@@ -11,7 +11,10 @@ BUILD = DEBUG
 ifeq ($(BUILD),RELEASE)
 	override CFLAGS := $(CFLAGS_RELEASE)
 endif
-override CFLAGS := $(CFLAGS)
+ASAN = 0
+ifeq ($(ASAN),1)
+	override CFLAGS := $(CFLAGS) $(ASAN_FLAGS)
+endif
 override CFLAGS := $(CFLAGS) -I./include
 
 #compilier
