@@ -120,6 +120,10 @@ int calculateMandelbrot(const mdContext_t md) {
         #define _MM_MUL(a, b) _mm_mul_pd(a, b)
 
         #define _MM_CMPLE_TO_EPI(a, b) (MMi_t) _mm_cmple_pd(a, b)
+
+        #define _MM_CVTEPI64_EPI32_STORE(ptr, a) \
+            _MM_STORE_HALF(ptr, _MM_SHUFFLE_i64_TO_i32(a))
+
     #endif
 
 #elif MM_SIZE == 256
@@ -129,7 +133,8 @@ int calculateMandelbrot(const mdContext_t md) {
     #define _MM_AND_EPI(a, b) _mm256_and_si256(a, b)
     #define _MM_TESTZ(a, b) _mm256_testz_si256(a, b)
 
-    #define _MM_SHUFFLE_i64_TO_i32(a) _mm256_permutevar8x32_epi32(a, _mm256_setr_epi32(0,2,4,6,0,0,0,0))
+    #define _MM_SHUFFLE_i64_TO_i32(a) \
+        _mm256_permutevar8x32_epi32(a, _mm256_setr_epi32(0,2,4,6,0,0,0,0))
     #if defined(MANDELBROT_FLOAT)
         typedef __m256  MM_t;
         #define _MM_LOAD(ptr)  _mm256_load_ps(ptr)
@@ -147,7 +152,8 @@ int calculateMandelbrot(const mdContext_t md) {
         #define _MM_LOAD(ptr)  _mm256_load_pd(ptr)
 
         #define _MM_SET1(val) _mm256_set1_pd(val)
-        #define _MM_STORE_HALF(ptr, a) _mm_store_si128( (__m128i *)ptr, _mm256_extracti128_si256(a, 0))
+        #define _MM_STORE_HALF(ptr, a) \
+            _mm_store_si128( (__m128i *)ptr, _mm256_extracti128_si256(a, 0))
 
         #define _MM_ADD(a, b) _mm256_add_pd(a, b)
         #define _MM_ADD_EPI(a, b) _mm256_add_epi64(a, b)
@@ -156,28 +162,57 @@ int calculateMandelbrot(const mdContext_t md) {
 
         #define _MM_CMPLE_TO_EPI(a, b) (MMi_t) _mm256_cmp_pd(a, b, _CMP_LE_OS)
 
+        #define _MM_CVTEPI64_EPI32_STORE(ptr, a) \
+            _MM_STORE_HALF((__m128i *)ptr, _MM_SHUFFLE_i64_TO_i32(a))
+
     #endif
 
 #elif MM_SIZE == 512
-    typedef __m512  MM_t;
     typedef __m512i MMi_t;
-
-    #define _MM_LOAD(ptr) _mm512_load_ps(ptr)
-
     #define _MM_LOAD_SI(ptr) _mm512_load_si512((const MMi_t *) ptr)
-
     #define _MM_STORE_SI(ptr, a) _mm512_store_si512(ptr, a)
-
-
-    #define _MM_SET1(val) _mm512_set1_ps(val)
-
     #define _MM_AND_EPI(a, b) _mm512_and_si512(a, b)
-    #define _MM_ADD(a, b) _mm512_add_ps(a, b)
-    #define _MM_ADD_EPI(a, b) _mm512_add_epi32(a, b)
 
-    #define _MM_SUB(a, b) _mm512_sub_ps(a, b)
-    #define _MM_MUL(a, b) _mm512_mul_ps(a, b)
+    #if defined(MANDELBROT_FLOAT)
+        typedef __m512  MM_t;
 
+        #define _MM_LOAD(ptr) _mm512_load_ps(ptr)
+
+        #define _MM_SET1(val) _mm512_set1_ps(val)
+
+        #define _MM_ADD(a, b) _mm512_add_ps(a, b)
+        #define _MM_ADD_EPI(a, b) _mm512_add_epi32(a, b)
+
+        #define _MM_SUB(a, b) _mm512_sub_ps(a, b)
+        #define _MM_MUL(a, b) _mm512_mul_ps(a, b)
+
+        #define _MM_CMPLE_MASK(a, b) _mm512_cmp_ps_mask(a, b, _CMP_LE_OS)
+        // a[i] = a[i] + b[i] if mask[i]
+        #define _MM_MASK_ADD_EPI(a, mask, b) \
+            _mm512_mask_add_epi32(a, mask, a, b)
+    #else
+        typedef __m512d  MM_t;
+
+        #define _MM_LOAD(ptr) _mm512_load_pd(ptr)
+
+        #define _MM_SET1(val) _mm512_set1_pd(val)
+        #define _MM_STORE_HALF(ptr, a) \
+            _mm256_store_si256((MMi_t *) ptr, _mm512_extracti32x8_epi32(a, 0))
+
+        #define _MM_ADD(a, b) _mm512_add_pd(a, b)
+        #define _MM_ADD_EPI(a, b) _mm512_add_epi64(a, b)
+
+        #define _MM_SUB(a, b) _mm512_sub_pd(a, b)
+        #define _MM_MUL(a, b) _mm512_mul_pd(a, b)
+
+        #define _MM_CMPLE_MASK(a, b) _mm512_cmp_pd_mask(a, b, _CMP_LE_OS)
+        // a[i] = a[i] + b[i] if mask[i]
+        #define _MM_MASK_ADD_EPI(a, mask, b) \
+            _mm512_mask_add_epi64(a, mask, a, b)
+
+        #define _MM_CVTEPI64_EPI32_STORE(ptr, a) \
+            _mm256_store_si256((__m256i *)ptr, _mm512_cvtepi64_epi32(a))
+    #endif
 
 #else
     #error Supported MM_SIZE: 128, 256, 512
@@ -244,13 +279,13 @@ int calculateMandelbrotOptimized(const mdContext_t md) {
             #if MM_SIZE == 512
                 // Comparing r^2 <= ESCAPE_RADIUS^2
                 // cmpMask[i] (bits) = (r2[i] <= escapeR2 )
-                uint16_t cmpMask = _mm512_cmp_ps_mask(r2, escapeR2, _CMP_LE_OS);
+                uint16_t cmpMask = _MM_CMPLE_MASK(r2, escapeR2);
                 // If cmpMask == 0 => all points escaped => break
                 if (!cmpMask) break;
 
                 // iter++ for points that have not escaped yet
                 // escapeIter[i]++ for i in cmpMask
-                escapeIter = _mm512_mask_add_epi32(escapeIter, cmpMask, escapeIter, logicMask);
+                escapeIter = _MM_MASK_ADD_EPI(escapeIter, cmpMask, logicMask);
             #else
                 // Comparing r^2 <= ESCAPE_RADIUS^2
                 // cmp = 0xFFFFFFF for true and 0x0 for false
@@ -277,13 +312,12 @@ int calculateMandelbrotOptimized(const mdContext_t md) {
             }
 
 
+        // Writing number of iterations to the memory
+        // !Alignment is controlled by MD_ALIGN. By default 64 bytes for any store instruction
+        // ! ix += PACKED_SIZE doesn't break align
         #ifdef MANDELBROT_DOUBLE
-            escapeIter = _MM_SHUFFLE_i64_TO_i32(escapeIter);
-            _MM_STORE_HALF(&escapeN[iy*WIDTH +ix], escapeIter);
+            _MM_CVTEPI64_EPI32_STORE(&escapeN[iy*WIDTH +ix], escapeIter);
         #else
-            // Writing number of iterations to the memory
-            // !Alignment is controlled by MD_ALIGN. By default 64 bytes for any store instruction
-            // ! ix += PACKED_SIZE doesn't break align
             _MM_STORE_SI((MMi_t *)&escapeN[iy*WIDTH +ix], escapeIter);
         #endif
         }

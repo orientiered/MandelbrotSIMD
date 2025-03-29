@@ -5,9 +5,17 @@
 
 /*================================= TYPEDEFS ============================================*/
 
-/// @brief Uncomment type you have chosen in typedef and recompile to get suitable optimizations
+/// @brief Uncomment type you want to use
 #define MANDELBROT_FLOAT
 // #define MANDELBROT_DOUBLE
+
+//! CRUCIAL PARAMETER
+//! Size of vector register in bits
+#define MM_SIZE 512    // size of current mm register
+//! xmm -- 128 (SSE4.2)
+//! ymm -- 256 (AVX2)
+//! zmm -- 512 (AVX512)
+//! Intrinsics and types will be chosen based on that define
 
 /// @brief Float type used for calculations
 #if defined(MANDELBROT_FLOAT)
@@ -20,14 +28,6 @@
 #else
     #error Type error: use only MANDELBROAT_FLOAT or MANDELBROAT_DOUBLE
 #endif
-
-//! CRUCIAL PARAMETER
-//! Size of vector register in bits
-//! xmm -- 128 (SSE4.2)
-//! ymm -- 256 (AVX2)
-//! zmm -- 512 (AVX512)
-//! Intrinsics and types will be chosen based on that define
-#define MM_SIZE 512    // size of current mm register
 
 /// @brief Context with essential info to calculate mandlebrot set
 typedef struct {
