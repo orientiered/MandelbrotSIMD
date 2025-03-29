@@ -48,7 +48,7 @@ int windowHandleEvents(windowContext_t *context, mdContext_t *md) {
 
             case sf::Event::MouseWheelScrolled:
             {
-                md_float multiplier = (event.mouseWheelScroll.delta > 0) ? 0.8 : (-1.0/0.8);
+                md_float multiplier = (event.mouseWheelScroll.delta > 0) ? MD_SCALE_FACTOR : (-1.0/MD_SCALE_FACTOR);
                 md->scale *= event.mouseWheelScroll.delta * multiplier;
                 break;
             }
@@ -56,23 +56,31 @@ int windowHandleEvents(windowContext_t *context, mdContext_t *md) {
             case sf::Event::KeyPressed:
                 switch(event.key.code) {
                     case sf::Keyboard::W:
-                        md->centerY += (double) md->WIDTH / 100 * md->scale;
+                        md->centerY += (double) md->WIDTH * MD_MOVE_FACTOR * md->scale;
                         break;
                     case sf::Keyboard::A:
-                        md->centerX -= (double) md->WIDTH / 100 * md->scale;
+                        md->centerX -= (double) md->WIDTH * MD_MOVE_FACTOR * md->scale;
                         break;
                     case sf::Keyboard::S:
-                        md->centerY -= (double) md->WIDTH / 100 * md->scale;
+                        md->centerY -= (double) md->WIDTH * MD_MOVE_FACTOR * md->scale;
                         break;
                     case sf::Keyboard::D:
-                        md->centerX += (double) md->WIDTH / 100 * md->scale;
+                        md->centerX += (double) md->WIDTH * MD_MOVE_FACTOR * md->scale;
                         break;
 
                     case sf::Keyboard::Up:
-                        md->scale *= 0.8;
+                        md->scale *= MD_SCALE_FACTOR;
                         break;
                     case sf::Keyboard::Down:
-                        md->scale *= 1.0/0.8;
+                        md->scale *= 1./MD_SCALE_FACTOR;
+                        break;
+                    case sf::Keyboard::Left:
+                        md->maxIter = (int)(md->maxIter * (1./MD_ITERS_FACTOR));
+                        if (md->maxIter < MD_MAX_ITER / 2)
+                            md->maxIter = MD_MAX_ITER / 2;
+                        break;
+                    case sf::Keyboard::Right:
+                        md->maxIter = (int)(md->maxIter * MD_ITERS_FACTOR);
                         break;
                     case sf::Keyboard::Escape:
                         context->window.close();

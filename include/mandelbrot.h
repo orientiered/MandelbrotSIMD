@@ -37,11 +37,12 @@ typedef struct {
     int WIDTH, HEIGHT;          ///< Width and height of the screen
     md_float centerX, centerY;  ///< Coordinates of center position on complex plane
     md_float scale;             ///< Scale = (unit length) / (pixels per unit length)
+    int maxIter;                ///< Maximum number of iterations per dot
 } mdContext_t;
 
 /*================================ CONSTANTS ============================================*/
 
-/// @brief Maximum number of iterations per pixel
+/// @brief Maximum number of iterations per pixel (default value)
 const int MD_MAX_ITER = 256;
 
 /// @brief Default center position

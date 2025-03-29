@@ -11,7 +11,8 @@ mdContext_t mdContextCtor(int WIDTH, int HEIGHT) {
         .UNALIGNED_escapeN = (uint32_t *) calloc(WIDTH*HEIGHT + ARRAY_ALIGNMENT, sizeof(uint32_t)),
         .WIDTH   = WIDTH,        .HEIGHT  = HEIGHT,
         .centerX = MD_DEFAULT_X, .centerY = MD_DEFAULT_Y,
-        .scale   = MD_DEFAULT_PLANE_WIDTH / WIDTH
+        .scale   = MD_DEFAULT_PLANE_WIDTH / WIDTH,
+        .maxIter = MD_MAX_ITER
     };
 
     int addrShift = ((MD_ALIGN - (size_t)context.UNALIGNED_escapeN % MD_ALIGN) % MD_ALIGN) / sizeof(uint32_t);
@@ -164,13 +165,12 @@ int calculateMandelbrotOptimized(const mdContext_t md) {
     const md_float centerX = md.centerX, centerY = md.centerY;
     const md_float scale = md.scale;
     const int WIDTH = md.WIDTH, HEIGHT = md.HEIGHT;
-
+    const int maxIter = md.maxIter;
     /*Points never come back after ESCAPE_RADIUS*/
     const md_float ESCAPE_RADIUS2 = MD_ESCAPE_RADIUS * MD_ESCAPE_RADIUS;
     const MM_t escapeR2 = _MM_SET1(ESCAPE_RADIUS2);
 
 
-    const md_float dx = scale;
     // 0, dx, 2*dx, ..., (PACKED_SIZE-1) * dx
     alignas(64) pmd_float initDelta__;
     for (int i = 0; i < PACKED_SIZE; i++) {
@@ -205,7 +205,7 @@ int calculateMandelbrotOptimized(const mdContext_t md) {
             MM_t y = y0;
 
             MMi_t escapeIter = {0};
-            for (int iteration = 0; iteration < MD_MAX_ITER; iteration++) {
+            for (int iteration = 0; iteration < maxIter; iteration++) {
                 /* md_float x2 = x*x, y2 = y*y, xy_2 = 2*x*y; */
                 MM_t x2   = _MM_MUL(x, x);
                 MM_t y2   = _MM_MUL(y, y);
@@ -262,10 +262,13 @@ int calculateMandelbrotOptimized(const mdContext_t md) {
 
 
 int convertItersToColor(const mdContext_t md) {
+    const int maxIteri = md.maxIter;
+    // const float maxIterf = (float)md.maxIter;
+
     for (int idx = 0; idx < md.WIDTH * md.HEIGHT; idx++) {
         int iter = md.escapeN[idx];
 
-        if (iter == MD_MAX_ITER)
+        if (iter == maxIteri)
             md.screen[idx] = 0; // Black
         else {
             const uint8_t red   = MD_MAX_ITER - iter;
