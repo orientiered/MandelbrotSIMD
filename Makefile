@@ -19,16 +19,19 @@ ifeq ($(origin CC),default)
 	CC=g++
 endif
 
-mandelbrot.exe: build/main.o build/mandelbrot.o build/window.o ./include/mandelbrot.h
+mandelbrot.exe: $(addprefix build/,main.o mandelbrot.o window.o utils.o)
 	$(CC) $(CFLAGS) $^ $(addprefix -l,$(LINK_LIBS)) -o $@
 
 build/main.o: main.cpp ./include/mandelbrot.h
-	$(CC) $(CFLAGS) -c $< -o$@
+	$(CC) $(CFLAGS) -D'_COMPILER="$(CC)"' -D'_COMPILE_FLAGS="$(CFLAGS)"' -c $< -o$@
 
 build/window.o: window.cpp ./include/mandelbrot.h
 	$(CC) $(CFLAGS) -c $< -o$@
 
 build/mandelbrot.o: mandelbrot.cpp ./include/mandelbrot.h
+	$(CC) $(CFLAGS) -c $< -o$@
+
+build/utils.o: utils.cpp
 	$(CC) $(CFLAGS) -c $< -o$@
 
 

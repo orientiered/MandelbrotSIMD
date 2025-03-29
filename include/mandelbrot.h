@@ -12,8 +12,11 @@
 /// @brief Float type used for calculations
 #if defined(MANDELBROT_FLOAT)
     typedef float md_float;
+    const char * const MD_FLOAT_TYPE_STR = "float";
 #elif defined(MANDELBROT_DOUBLE)
     typedef double md_float;
+    const char * const MD_FLOAT_TYPE_STR = "double";
+
 #else
     #error Type error: use only MANDELBROAT_FLOAT or MANDELBROAT_DOUBLE
 #endif
