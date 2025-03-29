@@ -84,51 +84,79 @@ int calculateMandelbrot(const mdContext_t md) {
 #define PACKED_SIZE MM_SIZE / 8 / sizeof(md_float)
 
 #if MM_SIZE == 128
-    typedef __m128  MM_t;
     typedef __m128i MMi_t;
-
-    #define _MM_LOAD(ptr)  _mm_load_ps(ptr)
 
     #define _MM_LOAD_SI(ptr) _mm_load_si128((const MMi_t *) ptr)
     #define _MM_STORE_SI(ptr, a) _mm_store_si128(ptr, a)
-
-
-    #define _MM_SET1(val) _mm_set_ps1(val)
-
     #define _MM_AND_EPI(a, b) _mm_and_si128(a, b)
-    #define _MM_ADD_EPI(a, b) _mm_add_epi32(a, b)
-    #define _MM_ADD(a, b) _mm_add_ps(a, b)
-
-    #define _MM_SUB(a, b) _mm_sub_ps(a, b)
-    #define _MM_MUL(a, b) _mm_mul_ps(a, b)
-
-    #define _MM_CMPLE_TO_EPI(a, b) (MMi_t) _mm_cmple_ps(a, b)
     #define _MM_TESTZ(a, b) _mm_testz_si128(a, b)
 
-    // #define _MM_CMPLE_MOVEMASK(a, b) _mm_movemask_ps( _mm_cmple_ps(a,b) )   // compare a <= b and create mask
+    #define _MM_SHUFFLE_i64_TO_i32(a) _mm_shuffle_epi32(a, 0b00100000)
 
+    #if defined(MANDELBROT_FLOAT)
+        typedef __m128  MM_t;
+
+        #define _MM_LOAD(ptr)  _mm_load_ps(ptr)
+        #define _MM_SET1(val) _mm_set_ps1(val)
+
+        #define _MM_ADD_EPI(a, b) _mm_add_epi32(a, b)
+        #define _MM_ADD(a, b) _mm_add_ps(a, b)
+
+        #define _MM_SUB(a, b) _mm_sub_ps(a, b)
+        #define _MM_MUL(a, b) _mm_mul_ps(a, b)
+
+        #define _MM_CMPLE_TO_EPI(a, b) (MMi_t) _mm_cmple_ps(a, b)
+    #else
+        typedef __m128d  MM_t;
+
+        #define _MM_LOAD(ptr)  _mm_load_pd(ptr)
+        #define _MM_SET1(val) _mm_set_pd1(val)
+        #define _MM_STORE_HALF(ptr, a) _mm_storeu_si64(ptr, a)
+
+        #define _MM_ADD_EPI(a, b) _mm_add_epi64(a, b)
+        #define _MM_ADD(a, b) _mm_add_pd(a, b)
+
+        #define _MM_SUB(a, b) _mm_sub_pd(a, b)
+        #define _MM_MUL(a, b) _mm_mul_pd(a, b)
+
+        #define _MM_CMPLE_TO_EPI(a, b) (MMi_t) _mm_cmple_pd(a, b)
+    #endif
 
 #elif MM_SIZE == 256
-    typedef __m256  MM_t;
     typedef __m256i MMi_t;
-
-    #define _MM_LOAD(ptr)  _mm256_load_ps(ptr)
-
     #define _MM_LOAD_SI(ptr) _mm256_load_si256((const MMi_t *) ptr)
     #define _MM_STORE_SI(ptr, a) _mm256_store_si256((MMi_t *)ptr, a)
-
-    #define _MM_SET1(val) _mm256_set1_ps(val)
-
     #define _MM_AND_EPI(a, b) _mm256_and_si256(a, b)
-    #define _MM_ADD(a, b) _mm256_add_ps(a, b)
-    #define _MM_ADD_EPI(a, b) _mm256_add_epi32(a, b)
-    #define _MM_SUB(a, b) _mm256_sub_ps(a, b)
-    #define _MM_MUL(a, b) _mm256_mul_ps(a, b)
-
-    #define _MM_CMPLE_TO_EPI(a, b) (MMi_t) _mm256_cmp_ps(a, b, _CMP_LE_OS)
     #define _MM_TESTZ(a, b) _mm256_testz_si256(a, b)
 
-    #define _MM_CMPLE_MOVEMASK(a, b) _mm256_movemask_ps( _mm256_cmp_ps(a,b, _CMP_LE_OS) )
+    #define _MM_SHUFFLE_i64_TO_i32(a) _mm256_permutevar8x32_epi32(a, _mm256_setr_epi32(0,2,4,6,0,0,0,0))
+    #if defined(MANDELBROT_FLOAT)
+        typedef __m256  MM_t;
+        #define _MM_LOAD(ptr)  _mm256_load_ps(ptr)
+
+        #define _MM_SET1(val) _mm256_set1_ps(val)
+
+        #define _MM_ADD(a, b) _mm256_add_ps(a, b)
+        #define _MM_ADD_EPI(a, b) _mm256_add_epi32(a, b)
+        #define _MM_SUB(a, b) _mm256_sub_ps(a, b)
+        #define _MM_MUL(a, b) _mm256_mul_ps(a, b)
+
+        #define _MM_CMPLE_TO_EPI(a, b) (MMi_t) _mm256_cmp_ps(a, b, _CMP_LE_OS)
+    #else
+        typedef __m256d  MM_t;
+        #define _MM_LOAD(ptr)  _mm256_load_pd(ptr)
+
+        #define _MM_SET1(val) _mm256_set1_pd(val)
+        #define _MM_STORE_HALF(ptr, a) _mm_store_si128( (__m128i *)ptr, _mm256_extracti128_si256(a, 0))
+
+        #define _MM_ADD(a, b) _mm256_add_pd(a, b)
+        #define _MM_ADD_EPI(a, b) _mm256_add_epi64(a, b)
+        #define _MM_SUB(a, b) _mm256_sub_pd(a, b)
+        #define _MM_MUL(a, b) _mm256_mul_pd(a, b)
+
+        #define _MM_CMPLE_TO_EPI(a, b) (MMi_t) _mm256_cmp_pd(a, b, _CMP_LE_OS)
+
+    #endif
 
 #elif MM_SIZE == 512
     typedef __m512  MM_t;
@@ -248,10 +276,16 @@ int calculateMandelbrotOptimized(const mdContext_t md) {
                 y = _MM_ADD(xy_2, y0);
             }
 
+
+        #ifdef MANDELBROT_DOUBLE
+            escapeIter = _MM_SHUFFLE_i64_TO_i32(escapeIter);
+            _MM_STORE_HALF(&escapeN[iy*WIDTH +ix], escapeIter);
+        #else
             // Writing number of iterations to the memory
             // !Alignment is controlled by MD_ALIGN. By default 64 bytes for any store instruction
             // ! ix += PACKED_SIZE doesn't break align
             _MM_STORE_SI((MMi_t *)&escapeN[iy*WIDTH +ix], escapeIter);
+        #endif
         }
     }
 
