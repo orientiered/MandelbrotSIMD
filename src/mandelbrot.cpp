@@ -6,6 +6,27 @@
 
 mdContext_t mdContextCtor(int WIDTH, int HEIGHT) {
     const int ARRAY_ALIGNMENT = MD_ALIGN / sizeof(uint32_t);
+
+    if (WIDTH < 0) {
+        printf("Width can only be positive. Fixed it for you: %d -> %d\n", WIDTH, -WIDTH);
+        WIDTH = -WIDTH;
+    }
+
+    if (WIDTH < 0) {
+        printf("Height can only be positive. Fixed it for you: %d -> %d\n", HEIGHT, -HEIGHT);
+        HEIGHT = -HEIGHT;
+    }
+
+    if ((WIDTH % AUTO_VEC_PACK_SIZE != 0) || WIDTH % ( MM_SIZE / sizeof(md_float) ) != 0) {
+        printf("Not compatible width. Searching for nearest appropriate width: %d ->", WIDTH);
+
+        while ((WIDTH % AUTO_VEC_PACK_SIZE != 0) || WIDTH % ( MM_SIZE / sizeof(md_float) ) != 0) {
+            WIDTH++;
+        }
+
+        printf(" %d\n", WIDTH);
+    }
+
     mdContext_t context =
     {   .screen  = (uint32_t *) calloc(WIDTH*HEIGHT, sizeof(uint32_t)),
         .UNALIGNED_escapeN = (uint32_t *) calloc(WIDTH*HEIGHT + ARRAY_ALIGNMENT, sizeof(uint32_t)),
