@@ -27,9 +27,12 @@ int testMandelbrot(FILE *file, const mdContext_t md, const unsigned test_count, 
 }
 
 int main(int argc, const char *argv[]) {
+    typedef int (*mandelbrotFunc_t)(const mdContext_t md);
     const char *testsInfoFilename = "tests.md";
     const int WIDTH  = 1920;
     const int HEIGHT = 1080;
+    const mandelbrotFunc_t mandelbrotRenderer = calculateMandelbrotOptimized;
+
     mdContext_t md = mdContextCtor(WIDTH, HEIGHT);
 
     char infoString[512] = "";
@@ -68,8 +71,7 @@ int main(int argc, const char *argv[]) {
         windowHandleEvents(&context, &md);
 
         sf::Time t1 = clock.getElapsedTime();
-        calculateMandelbrotOptimized(md);
-        // calculateMandelbrotAutoVec(md);
+        mandelbrotRenderer(md);
         sf::Time t2 = clock.getElapsedTime();
 
         convertItersToColor(md);
