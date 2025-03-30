@@ -109,7 +109,7 @@ int windowHandleEvents(windowContext_t *context, mdContext_t *md) {
                             char posString[256] = "";
                             wcstombs(posString, (const wchar_t *) posWstring, 256);
 
-                            printf("Ctrl+V:%s\n\n\n", posString);
+                            // printf("Ctrl+V:%s\n\n\n", posString);
                             double centerX = 0, centerY = 0, scale = 0;
                             if (sscanf(posString, "%lf %lf %lf", &centerX, &centerY, &scale) == 3) {
                                 md->centerX = centerX;

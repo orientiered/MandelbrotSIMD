@@ -218,8 +218,6 @@ int calculateMandelbrot(const mdContext_t md) {
     #error Supported MM_SIZE: 128, 256, 512
 #endif
 
-typedef md_float pmd_float[PACKED_SIZE];
-
 
 int calculateMandelbrotOptimized(const mdContext_t md) {
 
@@ -235,7 +233,7 @@ int calculateMandelbrotOptimized(const mdContext_t md) {
 
 
     // 0, dx, 2*dx, ..., (PACKED_SIZE-1) * dx
-    alignas(64) pmd_float initDelta__;
+    alignas(64) md_float initDelta__[PACKED_SIZE];
     for (int i = 0; i < PACKED_SIZE; i++) {
         initDelta__[i] = scale * i;
     }
@@ -328,6 +326,90 @@ int calculateMandelbrotOptimized(const mdContext_t md) {
 
 }
 
+int calculateMandelbrotAutoVec(const mdContext_t md) {
+    /*Unpacking values from mdContext_t for convinience */
+    uint32_t *escapeN = md.escapeN;
+    const md_float centerX = md.centerX, centerY = md.centerY;
+    const md_float scale = md.scale;
+    const int WIDTH = md.WIDTH, HEIGHT = md.HEIGHT;
+    const int maxIter = md.maxIter;
+    /*Points never come back after ESCAPE_RADIUS*/
+    const md_float ESCAPE_RADIUS2 = MD_ESCAPE_RADIUS * MD_ESCAPE_RADIUS;
+
+    md_float initDelta[AUTO_VEC_PACK_SIZE] = {};
+    for (int i = 0; i < AUTO_VEC_PACK_SIZE; i++)
+        initDelta[i] = scale*i;
+
+    for (int iy = 0; iy < HEIGHT; iy++) {
+        const md_float y0_single = centerY + (HEIGHT / 2 - iy) * scale;
+
+        md_float y0[AUTO_VEC_PACK_SIZE] = {};
+        for (int index = 0; index < AUTO_VEC_PACK_SIZE; index++)
+            y0[index] = y0_single;
+
+        for (int ix = 0; ix < WIDTH; ix += AUTO_VEC_PACK_SIZE) {
+            const md_float x0_start = centerX - scale*WIDTH / 2 + ix*scale;
+
+            md_float x0[AUTO_VEC_PACK_SIZE] = {};
+            for (int index = 0; index < AUTO_VEC_PACK_SIZE; index++)
+                x0[index] = x0_start + initDelta[index];
+
+            md_float x[AUTO_VEC_PACK_SIZE] = {};
+            for (int index = 0; index < AUTO_VEC_PACK_SIZE; index++)
+                x[index] = x0[index];
+
+            md_float y[AUTO_VEC_PACK_SIZE] = {};
+            for (int index = 0; index < AUTO_VEC_PACK_SIZE; index++)
+                y[index] = y0[index];
+
+            uint32_t escapeIter[AUTO_VEC_PACK_SIZE] = {0};
+
+            for (int iteration = 0; iteration < maxIter; iteration++) {
+                md_float x2[AUTO_VEC_PACK_SIZE] = {};
+                for (int index = 0; index < AUTO_VEC_PACK_SIZE; index++)
+                    x2[index] =  x[index] * x[index];
+
+                md_float y2[AUTO_VEC_PACK_SIZE] = {};
+                for (int index = 0; index < AUTO_VEC_PACK_SIZE; index++)
+                    y2[index] =  y[index] * y[index];
+
+                md_float r2[AUTO_VEC_PACK_SIZE] = {};
+                for (int index = 0; index < AUTO_VEC_PACK_SIZE; index++)
+                    r2[index] = x2[index] + y2[index];
+
+                uint32_t cmpMask[AUTO_VEC_PACK_SIZE] = {};
+                for (int index = 0; index < AUTO_VEC_PACK_SIZE; index++)
+                    cmpMask[index] = (r2[index] <= ESCAPE_RADIUS2);
+
+                int notEscaped = 0;
+                for (int index = 0; index < AUTO_VEC_PACK_SIZE; index++)
+                    notEscaped += cmpMask[index];
+
+                if (notEscaped == 0) break;
+
+                for (int index = 0; index < AUTO_VEC_PACK_SIZE; index++)
+                    escapeIter[index] = escapeIter[index] + cmpMask[index];
+
+                md_float xy[AUTO_VEC_PACK_SIZE] = {};
+                for (int index = 0; index < AUTO_VEC_PACK_SIZE; index++)
+                    xy[index] = x[index] * y[index];
+
+                // x = x^2 - y^2 + x0;
+                for (int index = 0; index < AUTO_VEC_PACK_SIZE; index++)
+                    x[index] = x2[index] - y2[index] + x0[index];
+                // y = 2xy       + y0
+                for (int index = 0; index < AUTO_VEC_PACK_SIZE; index++)
+                    y[index] = xy[index] + xy[index] + y0[index];
+            }
+
+            const int writeOffset = iy*WIDTH + ix;
+            for (int index = 0; index < AUTO_VEC_PACK_SIZE; index++)
+                escapeN[writeOffset + index] = escapeIter[index];
+        }
+    }
+
+    return 0;
+}
 
 int convertItersToColor(const mdContext_t md) {
     const int maxIteri = md.maxIter;

@@ -6,8 +6,8 @@
 /*================================= TYPEDEFS ============================================*/
 
 /// @brief Uncomment type you want to use
-#define MANDELBROT_FLOAT
-// #define MANDELBROT_DOUBLE
+// #define MANDELBROT_FLOAT
+#define MANDELBROT_DOUBLE
 
 //! CRUCIAL PARAMETER
 //! Size of vector register in bits
@@ -16,6 +16,10 @@
 //! ymm -- 256 (AVX2)
 //! zmm -- 512 (AVX512)
 //! Intrinsics and types will be chosen based on that define
+
+/// @brief Number of md_floats that will be processed simultaneously
+/// @brief Used only in version that is vectorized automatically
+#define AUTO_VEC_PACK_SIZE 32
 
 /// @brief Float type used for calculations
 #if defined(MANDELBROT_FLOAT)
@@ -69,8 +73,12 @@ int mdContextDtor(mdContext_t *context);
 /// @brief Calculate escape iteration for each pixel
 int calculateMandelbrot(const mdContext_t md);
 
-/// @brief Calculate escape iteration for each pixel with optimization
+/// @brief Calculate escape iteration for each pixel with intrinsics optimization
 int calculateMandelbrotOptimized(const mdContext_t md);
+
+/// @brief Calculate escape iteration for each pixel with hope that GCC vectorized code
+int calculateMandelbrotAutoVec(const mdContext_t md);
+
 
 /// @brief Convert iters from md.escapeN to pixels in md.screen
 int convertItersToColor(const mdContext_t md);

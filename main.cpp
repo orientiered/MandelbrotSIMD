@@ -23,6 +23,7 @@ int getProgramAndRunInfo(char *str, const mdContext_t md) {
                         "PLANE_WIDTH: %.5f\n"
                         "CENTER: %.3f, %.3f\n"
                         "MM_SIZE: %d\n"
+                        "Auto vectorization size: %d\n"
                         "FLOAT TYPE: %s\n"
                         "COMPILER: %s\n"
                         "COMPILE FLAGS: %s\n",
@@ -31,6 +32,7 @@ int getProgramAndRunInfo(char *str, const mdContext_t md) {
                         MD_DEFAULT_PLANE_WIDTH,
                         md.centerX, md.centerY,
                         MM_SIZE,
+                        AUTO_VEC_PACK_SIZE,
                         MD_FLOAT_TYPE_STR,
                         _COMPILER, compileFlags);
 }
@@ -90,6 +92,9 @@ int testMandelbrot(const mdContext_t md, const unsigned test_count) {
     printf("\nRunning optimized version...\n");
     testTime_t optTime   = testMandelbrotFunction(calculateMandelbrotOptimized, md, test_count);
 
+    printf("\nRunning autoVec version...\n");
+    testTime_t autoVecTime   = testMandelbrotFunction(calculateMandelbrotAutoVec, md, test_count);
+
     return 0;
 }
 
@@ -127,7 +132,8 @@ int main(int argc, const char *argv[]) {
         windowHandleEvents(&context, &md);
 
         sf::Time t1 = clock.getElapsedTime();
-        calculateMandelbrotOptimized(md);
+        // calculateMandelbrotOptimized(md);
+        calculateMandelbrotAutoVec(md);
         convertItersToColor(md);
 
         sf::Time t2 = clock.getElapsedTime();
