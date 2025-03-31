@@ -112,6 +112,8 @@ int calculateMandelbrot(const mdContext_t md) {
     #define _MM_AND_EPI(a, b) _mm_and_si128(a, b)
     #define _MM_TESTZ(a, b) _mm_testz_si128(a, b)
 
+    #define _MM_SETZERO(a) _mm_xor_si128(a, a)
+
     #define _MM_SHUFFLE_i64_TO_i32(a) _mm_shuffle_epi32(a, 0b00100000)
 
     #if defined(MANDELBROT_FLOAT)
@@ -153,6 +155,9 @@ int calculateMandelbrot(const mdContext_t md) {
     #define _MM_STORE_SI(ptr, a) _mm256_store_si256((MMi_t *)ptr, a)
     #define _MM_AND_EPI(a, b) _mm256_and_si256(a, b)
     #define _MM_TESTZ(a, b) _mm256_testz_si256(a, b)
+
+    #define _MM_SETZERO(a) _mm256_xor_si256(a, a)
+
 
     #define _MM_SHUFFLE_i64_TO_i32(a) \
         _mm256_permutevar8x32_epi32(a, _mm256_setr_epi32(0,2,4,6,0,0,0,0))
@@ -239,6 +244,7 @@ int calculateMandelbrot(const mdContext_t md) {
     #error Supported MM_SIZE: 128, 256, 512
 #endif
 
+#define MM_PACK_SIZE 2
 
 int calculateMandelbrotOptimized(const mdContext_t md) {
 
@@ -271,62 +277,95 @@ int calculateMandelbrotOptimized(const mdContext_t md) {
     for (int iy = 0; iy < HEIGHT; iy++) {
         // Setting y0: the same for all x
         // y0 = centerY + (HEIGHT / 2 - iy) * scale
-        MM_t y0 = _MM_SET1(centerY + (HEIGHT / 2 - iy) * scale);
+        MM_t y0[MM_PACK_SIZE];
+        for (int i = 0; i < MM_PACK_SIZE; i++)
+            y0[i] = _MM_SET1(centerY + (HEIGHT / 2 - iy) * scale);
 
-        for (int ix = 0; ix < WIDTH; ix+= PACKED_SIZE) {
+        for (int ix = 0; ix < WIDTH; ix+= PACKED_SIZE*MM_PACK_SIZE) {
             // x0[k] = centerX - scale*WIDTH / 2 + ix * scale + initDelta[k]
-            MM_t x0 = _MM_SET1(centerX - scale*WIDTH / 2 + ix * scale);
-            x0 = _MM_ADD(x0, initDelta);
+            MM_t x0[MM_PACK_SIZE];
+            for (int i = 0; i < MM_PACK_SIZE; i++)
+                x0[i] = _MM_ADD(_MM_SET1(centerX - scale*WIDTH / 2 + (ix + PACKED_SIZE * i) * scale), initDelta);
+            // x0 = _MM_ADD(x0, initDelta);
 
             /*
                 Mandelbrot formula:
                 x' = x^2 - y^2 + x0
                 y' = 2xy + y_0
             */
-            MM_t x = x0;
-            MM_t y = y0;
+            MM_t x[MM_PACK_SIZE];
+            for (int i = 0; i < MM_PACK_SIZE; i++)
+                x[i] = x0[i];
+            MM_t y[MM_PACK_SIZE];
+            for (int i = 0; i < MM_PACK_SIZE; i++)
+                y[i] = y0[i];
 
-            MMi_t escapeIter = {0};
+            MMi_t escapeIter[MM_PACK_SIZE];
+            for (int i = 0; i < MM_PACK_SIZE; i++)
+                escapeIter[i] = _MM_SET1(;
+
             for (int iteration = 0; iteration < maxIter; iteration++) {
                 /* md_float x2 = x*x, y2 = y*y, xy_2 = 2*x*y; */
-                MM_t x2   = _MM_MUL(x, x);
-                MM_t y2   = _MM_MUL(y, y);
+                MM_t x2[MM_PACK_SIZE];
+                MM_t y2[MM_PACK_SIZE];   
+                for (int i = 0; i < MM_PACK_SIZE; i++)
+                    x2[i] = _MM_MUL(x[i], x[i]);
+                for (int i = 0; i < MM_PACK_SIZE; i++)
+                    y2[i] = _MM_MUL(y[i], y[i]);
+                
 
-                MM_t r2 = _MM_ADD(x2, y2);
+                MM_t r2[MM_PACK_SIZE];
+                for (int i = 0; i < MM_PACK_SIZE; i++)
+                    r2[i] = _MM_ADD(x2[i], y2[i]);
 
                 // This section vastly differs in AVX512 and SSE/AVX2
             #if MM_SIZE == 512
                 // Comparing r^2 <= ESCAPE_RADIUS^2
                 // cmpMask[i] (bits) = (r2[i] <= escapeR2 )
-                uint16_t cmpMask = _MM_CMPLE_MASK(r2, escapeR2);
+                uint16_t cmpMask[MM_PACK_SIZE];
+                for (int i = 0; i < MM_PACK_SIZE; i++)
+                    cmpMask[i] = _MM_CMPLE_MASK(r2[i], escapeR2);
                 // If cmpMask == 0 => all points escaped => break
-                if (!cmpMask) break;
+                bool notAllEscaped = false;
+                for (int i = 0; i < MM_PACK_SIZE; i++)
+                    notAllEscaped |= cmpMask[i];
+                if (!notAllEscaped) break;
 
                 // iter++ for points that have not escaped yet
                 // escapeIter[i]++ for i in cmpMask
-                escapeIter = _MM_MASK_ADD_EPI(escapeIter, cmpMask, logicMask);
+                for (int i = 0; i < MM_PACK_SIZE; i++)
+                    escapeIter[i] = _MM_MASK_ADD_EPI(escapeIter[i], cmpMask[i], logicMask);
             #else
                 // Comparing r^2 <= ESCAPE_RADIUS^2
                 // cmp = 0xFFFFFFF for true and 0x0 for false
-                MMi_t cmp = _MM_CMPLE_TO_EPI(r2, escapeR2);
+                MMi_t cmp[MM_PACK_SIZE];
+                for (int i = 0; i < MM_PACK_SIZE; i++)
+                    cmp[i] = _MM_CMPLE_TO_EPI(r2[i], escapeR2[i]);
                 // If cmp == 0 => all points escaped => break
-                if (_MM_TESTZ(cmp, cmp)) break;
+                for (int i = 0; i < MM_PACK_SIZE; i++)
+                    if (_MM_TESTZ(cmp, cmp)) break;
 
                 // Converting mask to integer 1 or 0
                 // logicMask = low bit for every float in MM_t
-                cmp = _MM_AND_EPI(cmp, logicMask);
+                for (int i = 0; i < MM_PACK_SIZE; i++)
+                    cmp[i] = _MM_AND_EPI(cmp[i], logicMask);
                 // iter++ for points that have not escaped yet
-                escapeIter = _MM_ADD_EPI(escapeIter, cmp);
+                for (int i = 0; i < MM_PACK_SIZE; i++)
+                    escapeIter[i] = _MM_ADD_EPI(escapeIter[i], cmp[i]);
             #endif
-                MM_t xy_2 = _MM_MUL(x, y);
-                xy_2 = _MM_ADD(xy_2, xy_2);
+                MM_t xy_2[MM_PACK_SIZE];
+                for (int i = 0; i < MM_PACK_SIZE; i++)
+                    xy_2[i] = _MM_MUL(x[i], y[i]);
+                for (int i = 0; i < MM_PACK_SIZE; i++)
+                    xy_2[i] = _MM_ADD(xy_2[i], xy_2[i]);
 
                 // x = x2 - y2 + x0;
-                x = _MM_SUB(x2,y2);
-                x = _MM_ADD(x, x0);
+                for (int i = 0; i < MM_PACK_SIZE; i++)
+                    x[i] = _MM_ADD(_MM_SUB(x2[i],y2[i]), x0[i]);
 
                 // y = xy_2    + y0;
-                y = _MM_ADD(xy_2, y0);
+                for (int i = 0; i < MM_PACK_SIZE; i++)
+                    y[i] = _MM_ADD(xy_2[i], y0[i]);
 
             }
 
@@ -335,9 +374,11 @@ int calculateMandelbrotOptimized(const mdContext_t md) {
         // !Alignment is controlled by MD_ALIGN. By default 64 bytes for any store instruction
         // ! ix += PACKED_SIZE doesn't break align
         #ifdef MANDELBROT_DOUBLE
-            _MM_CVTEPI64_EPI32_STORE(&escapeN[iy*WIDTH +ix], escapeIter);
+            for (int i = 0; i < MM_PACK_SIZE; i++)
+                _MM_CVTEPI64_EPI32_STORE(&escapeN[iy*WIDTH +ix + PACKED_SIZE*i], escapeIter[i]);
         #else
-            _MM_STORE_SI((MMi_t *)&escapeN[iy*WIDTH +ix], escapeIter);
+            for (int i = 0; i < MM_PACK_SIZE; i++)
+                _MM_STORE_SI((MMi_t *)&escapeN[iy*WIDTH +ix + PACKED_SIZE*i], escapeIter[i]);
         #endif
         }
     }
