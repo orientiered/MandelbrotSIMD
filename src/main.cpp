@@ -7,6 +7,7 @@
 #include <window.h>
 #include <metrics.h>
 
+#include <string.h>
 
 int testMandelbrot(FILE *file, const mdContext_t md, const unsigned test_count, const sf::Time duration) {
 
@@ -26,6 +27,60 @@ int testMandelbrot(FILE *file, const mdContext_t md, const unsigned test_count, 
     return 0;
 }
 
+typedef struct {
+    bool testMode;
+    unsigned testCount;
+    sf::Time testDuration;
+} cmdArgsData_t;
+
+static const unsigned DEFAULT_TEST_COUNT = 10;
+static const float    DEFAULT_TEST_TIME  = 5.0; // seconds
+
+cmdArgsData_t parseCmdArgs(int argc, const char *argv[]) {
+    cmdArgsData_t data = {false, 0, sf::Time::Zero};
+
+    if (argc <= 1)
+        return data;
+
+    if (strcmp(argv[1], "--test") == 0) {
+        float durationInSeconds = 0.;
+
+        data.testMode = true;
+        if (argc == 2) {
+            printf("Using default test parameters: testCount = %u, time = %f sec\n", DEFAULT_TEST_COUNT, DEFAULT_TEST_TIME);
+            data.testCount = DEFAULT_TEST_COUNT;
+            data.testDuration = sf::seconds(DEFAULT_TEST_TIME);
+        }
+
+        for (int argvIndex = 2; argvIndex < argc; argvIndex++) {
+            if (sscanf(argv[argvIndex], "-number=%u", &data.testCount) == 1)
+                continue;
+
+            if (sscanf(argv[argvIndex], "-time=%f", &durationInSeconds) == 1) {
+                data.testDuration = sf::seconds(durationInSeconds);
+                continue;
+            }
+
+            printf("Expected: -number=<unsigned number of tests> || -time=<float number of seconds>\n");
+            printf("Got: %s\n", argv[argvIndex]);
+            printf("Deactivating test mode\n");
+            data.testMode = false;
+
+            break;
+        }
+    } else if (strcmp(argv[1], "--help") == 0) {
+        printf( "# Mandelbrot set explorer                              \n"
+                "$ Flags description:                                   \n"
+                "! --help  see this message                             \n"
+                "! --test  activate testing mode                        \n"
+                "! After --test: -number=<unsigned number of tests>      \n"
+                "!               -time=<float number of seconds>         \n"
+                "$ Example: ./mandelbrot.exe --test time=5.6 number=30  \n");
+    }
+
+    return data;
+}
+
 int main(int argc, const char *argv[]) {
     typedef int (*mandelbrotFunc_t)(const mdContext_t md);
     const char *testsInfoFilename = "tests.md";
@@ -39,15 +94,13 @@ int main(int argc, const char *argv[]) {
     getProgramAndRunInfo(infoString, md);
     printf("%s\n", infoString);
 
-    bool test_mode = argc > 1;
-    unsigned test_count = 0;
-    if (test_mode) sscanf(argv[1], "%u", &test_count);
+    cmdArgsData_t cmdArgs = parseCmdArgs(argc, argv);
 
     uint32_t total_rendered = 0;
 
     sf::Clock clock;
 
-    if (test_mode) {
+    if (cmdArgs.testMode) {
         FILE *testRecords = fopen(testsInfoFilename, "a");
         fprintf(testRecords, "\n# Test session\n"
                              "## General information:\n"
@@ -55,7 +108,7 @@ int main(int argc, const char *argv[]) {
                              "%s"
                              "```\n", infoString);
 
-        testMandelbrot(testRecords, md, test_count, sf::seconds(0));
+        testMandelbrot(testRecords, md, cmdArgs.testCount, cmdArgs.testDuration);
         mdContextDtor(&md);
         fclose(testRecords);
         return 0;

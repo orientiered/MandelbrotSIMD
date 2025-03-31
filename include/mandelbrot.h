@@ -6,12 +6,12 @@
 /*================================= TYPEDEFS ============================================*/
 
 /// @brief Uncomment type you want to use
-#define MANDELBROT_FLOAT
-// #define MANDELBROT_DOUBLE
+// #define MANDELBROT_FLOAT
+#define MANDELBROT_DOUBLE
 
 //! CRUCIAL PARAMETER
 //! Size of vector register in bits
-#define MM_SIZE 256    // size of current mm register
+#define MM_SIZE 512    // size of current mm register
 //! xmm -- 128 (SSE4.2)
 //! ymm -- 256 (AVX2)
 //! zmm -- 512 (AVX512)

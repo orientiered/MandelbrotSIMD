@@ -6,7 +6,7 @@
       "_DEBUG",
       "-ggdb3",
       "-std=c++17",
-      "-O0",
+      "-Og",
       "-march=native",
       "-Wall",
       "-Wextra",
@@ -60,14 +60,12 @@
       "-Wstack-protector",
       "-fcheck-new",
       "-I./include",
-      "-D_COMPILER=\"g++\"",
-      "-D_COMPILE_FLAGS=\"-D _DEBUG -ggdb3 -std=c++17 -O0 -march=native -Wall -Wextra -Weffc++ -Waggressive-loop-optimizations -Wc++14-compat -Wmissing-declarations -Wcast-align -Wcast-qual -Wchar-subscripts -Wconditionally-supported -Wconversion -Wctor-dtor-privacy -Wempty-body -Wfloat-equal -Wformat-nonliteral -Wformat-security -Wformat-signedness -Wformat=2 -Winline -Wlogical-op -Wnon-virtual-dtor -Wopenmp-simd -Woverloaded-virtual -Wpacked -Wpointer-arith -Winit-self -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-null-sentinel -Wstrict-overflow=2 -Wsuggest-attribute=noreturn -Wsuggest-final-methods -Wsuggest-final-types -Wsuggest-override -Wswitch-default -Wswitch-enum -Wsync-nand -Wundef -Wunreachable-code -Wunused -Wuseless-cast -Wvariadic-macros -Wno-literal-suffix -Wno-missing-field-initializers -Wno-narrowing -Wno-old-style-cast -Wno-varargs -Wstack-protector -fcheck-new -I./include\"",
       "-c",
       "-obuild/main.o",
-      "main.cpp"
+      "src/main.cpp"
     ],
     "directory": "/home/orientiered/_Code/asm/MandelbrotSIMD",
-    "file": "/home/orientiered/_Code/asm/MandelbrotSIMD/main.cpp"
+    "file": "/home/orientiered/_Code/asm/MandelbrotSIMD/src/main.cpp"
   },
   {
     "arguments": [
@@ -76,7 +74,7 @@
       "_DEBUG",
       "-ggdb3",
       "-std=c++17",
-      "-O0",
+      "-Og",
       "-march=native",
       "-Wall",
       "-Wextra",
@@ -132,10 +130,10 @@
       "-I./include",
       "-c",
       "-obuild/mandelbrot.o",
-      "mandelbrot.cpp"
+      "src/mandelbrot.cpp"
     ],
     "directory": "/home/orientiered/_Code/asm/MandelbrotSIMD",
-    "file": "/home/orientiered/_Code/asm/MandelbrotSIMD/mandelbrot.cpp"
+    "file": "/home/orientiered/_Code/asm/MandelbrotSIMD/src/mandelbrot.cpp"
   },
   {
     "arguments": [
@@ -144,7 +142,7 @@
       "_DEBUG",
       "-ggdb3",
       "-std=c++17",
-      "-O0",
+      "-Og",
       "-march=native",
       "-Wall",
       "-Wextra",
@@ -200,10 +198,10 @@
       "-I./include",
       "-c",
       "-obuild/window.o",
-      "window.cpp"
+      "src/window.cpp"
     ],
     "directory": "/home/orientiered/_Code/asm/MandelbrotSIMD",
-    "file": "/home/orientiered/_Code/asm/MandelbrotSIMD/window.cpp"
+    "file": "/home/orientiered/_Code/asm/MandelbrotSIMD/src/window.cpp"
   },
   {
     "arguments": [
@@ -212,7 +210,7 @@
       "_DEBUG",
       "-ggdb3",
       "-std=c++17",
-      "-O0",
+      "-Og",
       "-march=native",
       "-Wall",
       "-Wextra",
@@ -267,10 +265,12 @@
       "-fcheck-new",
       "-I./include",
       "-c",
-      "-obuild/utils.o",
-      "utils.cpp"
+      "-obuild/metrics.o",
+      "-D_COMPILER=\"g++\"",
+      "-D_COMPILE_FLAGS=\"-D _DEBUG -ggdb3 -std=c++17 -Og -march=native -Wall -Wextra -Weffc++ -Waggressive-loop-optimizations -Wc++14-compat -Wmissing-declarations -Wcast-align -Wcast-qual -Wchar-subscripts -Wconditionally-supported -Wconversion -Wctor-dtor-privacy -Wempty-body -Wfloat-equal -Wformat-nonliteral -Wformat-security -Wformat-signedness -Wformat=2 -Winline -Wlogical-op -Wnon-virtual-dtor -Wopenmp-simd -Woverloaded-virtual -Wpacked -Wpointer-arith -Winit-self -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-null-sentinel -Wstrict-overflow=2 -Wsuggest-attribute=noreturn -Wsuggest-final-methods -Wsuggest-final-types -Wsuggest-override -Wswitch-default -Wswitch-enum -Wsync-nand -Wundef -Wunreachable-code -Wunused -Wuseless-cast -Wvariadic-macros -Wno-literal-suffix -Wno-missing-field-initializers -Wno-narrowing -Wno-old-style-cast -Wno-varargs -Wstack-protector -fcheck-new -I./include\"",
+      "src/metrics.cpp"
     ],
     "directory": "/home/orientiered/_Code/asm/MandelbrotSIMD",
-    "file": "/home/orientiered/_Code/asm/MandelbrotSIMD/utils.cpp"
+    "file": "/home/orientiered/_Code/asm/MandelbrotSIMD/src/metrics.cpp"
   }
 ]

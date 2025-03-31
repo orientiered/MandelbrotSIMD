@@ -35,8 +35,8 @@ doublePair_t runningSTD(double value, int getResult) {
 }
 
 testTime_t testMandelbrotFunction(int (*mandelbrot)(const mdContext_t md), const mdContext_t md,    ///< Mandelbrot calc function and its context
-                                  const unsigned test_count,     ///< Number of test to preform. Leave 0 to use time limit instead
-                                  const sf::Time durationLimit)  ///< Time limit for testing. Active only if test_count == 0
+                                  const unsigned test_count,     ///< Minimum number of test to preform.
+                                  const sf::Time durationLimit)  ///< Minimum testing time.
 {
 
     sf::Clock clock;
@@ -64,8 +64,8 @@ testTime_t testMandelbrotFunction(int (*mandelbrot)(const mdContext_t md), const
 
         totalRendered++;
         // stopping testing
-        if ((test_count > 0 && totalRendered >= test_count) ||
-            (test_count == 0 && testDuration.getElapsedTime() > durationLimit) )
+        if ( (totalRendered >= test_count) &&
+             (testDuration.getElapsedTime() > durationLimit) )
             break;
     }
 
@@ -113,8 +113,8 @@ int saveMandelbrotTestResult(FILE *file, const testTime_t testResult, const char
 
     fprintf(file,   " + FPS: %.2f\n"
                     " + Milliseconds per frame: $%.3f \\pm %.3f$\n"
-                    " + Best  time: %.2f\n"
-                    " + Worst time: %.2f\n",
+                    " + Best  frame: %.2f ms\n"
+                    " + Worst frame: %.2f ms\n",
                     fps, averageMs, errorMs, bestTimeMs, worstTimeMs);
 
     return 0;

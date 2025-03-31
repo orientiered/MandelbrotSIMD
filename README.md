@@ -30,7 +30,7 @@
         Best results are often get when `AUTO_VEC_PACK_SIZE` is x2 or x4 of floats you can put in one MM register.
 
         + For example: `AVX2` -> `256 bits` + `float (32bits)` -> `8` floats in `ymm` ---> `AUTO_VEC_PACK_SIZE = 32`
-+ Choose screen resolution and render function in [main.cpp](source/main.cpp)
++ Choose screen resolution and render function in [main.cpp](src/main.cpp)
     ```c
     const int WIDTH  = 1920;    // in pixels
     const int HEIGHT = 1080;

@@ -31,11 +31,12 @@ doublePair_t runningSTD(double value, int getResult);
 
 /// @brief Test performance of given mandelbrot function
 /// Prints FPS, MSPF (ms per frame), best and worst computation time
+/// Function is tested at least test_count times and at least duration time
 /// @return Result of test in struct ( @see testTime_t )
 testTime_t testMandelbrotFunction(int (*mandelbrot)(const mdContext_t md),
                                   const mdContext_t md,         ///< Mandelbrot calc function and its context
-                                  const unsigned test_count,    ///< Number of test to preform. Leave 0 to use time limit instead
-                                  const sf::Time duration       ///< Time limit for testing. Active only if test_count == 0
+                                  const unsigned test_count,    ///< Minimum number of tests to perform
+                                  const sf::Time duration       ///< Minimum testing time
                                  );
 
 

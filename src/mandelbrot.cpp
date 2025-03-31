@@ -318,7 +318,6 @@ int calculateMandelbrotOptimized(const mdContext_t md) {
                 // iter++ for points that have not escaped yet
                 escapeIter = _MM_ADD_EPI(escapeIter, cmp);
             #endif
-
                 MM_t xy_2 = _MM_MUL(x, y);
                 xy_2 = _MM_ADD(xy_2, xy_2);
 
@@ -328,6 +327,7 @@ int calculateMandelbrotOptimized(const mdContext_t md) {
 
                 // y = xy_2    + y0;
                 y = _MM_ADD(xy_2, y0);
+
             }
 
 
@@ -404,7 +404,7 @@ int calculateMandelbrotAutoVec(const mdContext_t md) {
 
                 int notEscaped = 0;
                 for (int index = 0; index < AUTO_VEC_PACK_SIZE; index++)
-                    notEscaped += cmpMask[index];
+                    notEscaped |= cmpMask[index];
 
                 if (notEscaped == 0) break;
 

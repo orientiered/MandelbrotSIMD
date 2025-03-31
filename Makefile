@@ -36,7 +36,7 @@ $(BUILD_DIR)window.o: $(SRC_DIR)window.cpp ./include/mandelbrot.h
 $(BUILD_DIR)mandelbrot.o: $(SRC_DIR)mandelbrot.cpp ./include/mandelbrot.h
 	$(CC) $(CFLAGS) -c $< -o$@
 
-$(BUILD_DIR)metrics.o: $(SRC_DIR)metrics.cpp
+$(BUILD_DIR)metrics.o: $(SRC_DIR)metrics.cpp ./include/mandelbrot.h
 	$(CC) $(CFLAGS) -c $< -o$@ -D'_COMPILER="$(CC)"' -D'_COMPILE_FLAGS="$(CFLAGS)"'
 
 
