@@ -346,6 +346,7 @@ int calculateMandelbrotOptimized(const mdContext_t md) {
                 for (int i = 0; i < MM_PACKS; i++)
                     r2[i] = _MM_ADD(x2[i], y2[i]);
 
+
                 // This section vastly differs in AVX512 and SSE/AVX2
             #if MM_SIZE == 512
                 // Comparing r^2 <= ESCAPE_RADIUS^2
@@ -370,8 +371,11 @@ int calculateMandelbrotOptimized(const mdContext_t md) {
                 for (int i = 0; i < MM_PACKS; i++)
                     cmp[i] = _MM_CMPLE_TO_EPI(r2[i], escapeR2);
                 // If cmp == 0 => all points escaped => break
+                bool allEscaped = true;
                 for (int i = 0; i < MM_PACKS; i++)
-                    if (_MM_TESTZ(cmp[i], cmp[i])) break;
+                    allEscaped &= _MM_TESTZ(cmp[i], cmp[i]) ;
+
+                if (allEscaped) break;
 
                 // Converting mask to integer 1 or 0
                 // logicMask = low bit for every float in MM_t

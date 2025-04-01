@@ -11,11 +11,11 @@
 
 /// @brief Number of packs of md_float that are processed in one iteration
 /// Improves conveyorization by reducing data dependency
-#define MM_PACKS 5 
+#define MM_PACKS 3 
 
 //! CRUCIAL PARAMETER
 //! Size of vector register in bits
-#define MM_SIZE 512    // size of current mm register
+#define MM_SIZE 256    // size of current mm register
 //! xmm -- 128 (SSE4.2)
 //! ymm -- 256 (AVX2)
 //! zmm -- 512 (AVX512)
