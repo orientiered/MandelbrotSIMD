@@ -43,6 +43,6 @@ $(BUILD_DIR)metrics.o: $(SRC_DIR)metrics.cpp ./include/mandelbrot.h
 .PHONY:clean disasm
 
 disasm:
-	objdump -Mintel -D mandelbrot.exe > mandelbrot.disasm
+	objdump -Mintel -D --visualize-jumps mandelbrot.exe > mandelbrot.disasm
 clean:
 	rm build/*

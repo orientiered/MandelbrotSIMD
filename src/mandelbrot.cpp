@@ -172,7 +172,7 @@ int calculateMandelbrot(const mdContext_t md) {
         #define _MM_SUB(a, b) _mm256_sub_ps(a, b)
         #define _MM_MUL(a, b) _mm256_mul_ps(a, b)
 
-        #define _MM_CMPLE_TO_EPI(a, b) (MMi_t) _mm256_cmp_ps(a, b, _CMP_LE_OS)
+        #define _MM_CMPLE_TO_EPI(a, b) _mm256_castps_si256( _mm256_cmp_ps(a, b, _CMP_LE_OS))
     #else
         typedef __m256d  MM_t;
         #define _MM_LOAD(ptr)  _mm256_load_pd(ptr)
@@ -198,6 +198,8 @@ int calculateMandelbrot(const mdContext_t md) {
     #define _MM_LOAD_SI(ptr) _mm512_load_si512((const MMi_t *) ptr)
     #define _MM_STORE_SI(ptr, a) _mm512_store_si512(ptr, a)
     #define _MM_AND_EPI(a, b) _mm512_and_si512(a, b)
+
+    #define _MM_SETZERO(a) _mm512_xor_si512(a, a)
 
     #if defined(MANDELBROT_FLOAT)
         typedef __m512  MM_t;
@@ -244,7 +246,6 @@ int calculateMandelbrot(const mdContext_t md) {
     #error Supported MM_SIZE: 128, 256, 512
 #endif
 
-#define MM_PACK_SIZE 2
 
 int calculateMandelbrotOptimized(const mdContext_t md) {
 
@@ -277,14 +278,14 @@ int calculateMandelbrotOptimized(const mdContext_t md) {
     for (int iy = 0; iy < HEIGHT; iy++) {
         // Setting y0: the same for all x
         // y0 = centerY + (HEIGHT / 2 - iy) * scale
-        MM_t y0[MM_PACK_SIZE];
-        for (int i = 0; i < MM_PACK_SIZE; i++)
+        MM_t y0[MM_PACKS];
+        for (int i = 0; i < MM_PACKS; i++)
             y0[i] = _MM_SET1(centerY + (HEIGHT / 2 - iy) * scale);
 
-        for (int ix = 0; ix < WIDTH; ix+= PACKED_SIZE*MM_PACK_SIZE) {
+        for (int ix = 0; ix < WIDTH; ix+= PACKED_SIZE*MM_PACKS) {
             // x0[k] = centerX - scale*WIDTH / 2 + ix * scale + initDelta[k]
-            MM_t x0[MM_PACK_SIZE];
-            for (int i = 0; i < MM_PACK_SIZE; i++)
+            MM_t x0[MM_PACKS];
+            for (int i = 0; i < MM_PACKS; i++)
                 x0[i] = _MM_ADD(_MM_SET1(centerX - scale*WIDTH / 2 + (ix + PACKED_SIZE * i) * scale), initDelta);
             // x0 = _MM_ADD(x0, initDelta);
 
@@ -293,78 +294,78 @@ int calculateMandelbrotOptimized(const mdContext_t md) {
                 x' = x^2 - y^2 + x0
                 y' = 2xy + y_0
             */
-            MM_t x[MM_PACK_SIZE];
-            for (int i = 0; i < MM_PACK_SIZE; i++)
+            MM_t x[MM_PACKS];
+            for (int i = 0; i < MM_PACKS; i++)
                 x[i] = x0[i];
-            MM_t y[MM_PACK_SIZE];
-            for (int i = 0; i < MM_PACK_SIZE; i++)
+            MM_t y[MM_PACKS];
+            for (int i = 0; i < MM_PACKS; i++)
                 y[i] = y0[i];
 
-            MMi_t escapeIter[MM_PACK_SIZE];
-            for (int i = 0; i < MM_PACK_SIZE; i++)
-                escapeIter[i] = _MM_SET1(;
+            MMi_t escapeIter[MM_PACKS];
+            for (int i = 0; i < MM_PACKS; i++)
+                escapeIter[i] = _MM_SETZERO(escapeIter[i]);
 
             for (int iteration = 0; iteration < maxIter; iteration++) {
                 /* md_float x2 = x*x, y2 = y*y, xy_2 = 2*x*y; */
-                MM_t x2[MM_PACK_SIZE];
-                MM_t y2[MM_PACK_SIZE];   
-                for (int i = 0; i < MM_PACK_SIZE; i++)
+                MM_t x2[MM_PACKS];
+                MM_t y2[MM_PACKS];   
+                for (int i = 0; i < MM_PACKS; i++)
                     x2[i] = _MM_MUL(x[i], x[i]);
-                for (int i = 0; i < MM_PACK_SIZE; i++)
+                for (int i = 0; i < MM_PACKS; i++)
                     y2[i] = _MM_MUL(y[i], y[i]);
                 
 
-                MM_t r2[MM_PACK_SIZE];
-                for (int i = 0; i < MM_PACK_SIZE; i++)
+                MM_t r2[MM_PACKS];
+                for (int i = 0; i < MM_PACKS; i++)
                     r2[i] = _MM_ADD(x2[i], y2[i]);
 
                 // This section vastly differs in AVX512 and SSE/AVX2
             #if MM_SIZE == 512
                 // Comparing r^2 <= ESCAPE_RADIUS^2
                 // cmpMask[i] (bits) = (r2[i] <= escapeR2 )
-                uint16_t cmpMask[MM_PACK_SIZE];
-                for (int i = 0; i < MM_PACK_SIZE; i++)
+                uint16_t cmpMask[MM_PACKS];
+                for (int i = 0; i < MM_PACKS; i++)
                     cmpMask[i] = _MM_CMPLE_MASK(r2[i], escapeR2);
                 // If cmpMask == 0 => all points escaped => break
                 bool notAllEscaped = false;
-                for (int i = 0; i < MM_PACK_SIZE; i++)
+                for (int i = 0; i < MM_PACKS; i++)
                     notAllEscaped |= cmpMask[i];
                 if (!notAllEscaped) break;
 
                 // iter++ for points that have not escaped yet
                 // escapeIter[i]++ for i in cmpMask
-                for (int i = 0; i < MM_PACK_SIZE; i++)
+                for (int i = 0; i < MM_PACKS; i++)
                     escapeIter[i] = _MM_MASK_ADD_EPI(escapeIter[i], cmpMask[i], logicMask);
             #else
                 // Comparing r^2 <= ESCAPE_RADIUS^2
                 // cmp = 0xFFFFFFF for true and 0x0 for false
-                MMi_t cmp[MM_PACK_SIZE];
-                for (int i = 0; i < MM_PACK_SIZE; i++)
-                    cmp[i] = _MM_CMPLE_TO_EPI(r2[i], escapeR2[i]);
+                MMi_t cmp[MM_PACKS];
+                for (int i = 0; i < MM_PACKS; i++)
+                    cmp[i] = _MM_CMPLE_TO_EPI(r2[i], escapeR2);
                 // If cmp == 0 => all points escaped => break
-                for (int i = 0; i < MM_PACK_SIZE; i++)
-                    if (_MM_TESTZ(cmp, cmp)) break;
+                for (int i = 0; i < MM_PACKS; i++)
+                    if (_MM_TESTZ(cmp[i], cmp[i])) break;
 
                 // Converting mask to integer 1 or 0
                 // logicMask = low bit for every float in MM_t
-                for (int i = 0; i < MM_PACK_SIZE; i++)
+                for (int i = 0; i < MM_PACKS; i++)
                     cmp[i] = _MM_AND_EPI(cmp[i], logicMask);
                 // iter++ for points that have not escaped yet
-                for (int i = 0; i < MM_PACK_SIZE; i++)
+                for (int i = 0; i < MM_PACKS; i++)
                     escapeIter[i] = _MM_ADD_EPI(escapeIter[i], cmp[i]);
             #endif
-                MM_t xy_2[MM_PACK_SIZE];
-                for (int i = 0; i < MM_PACK_SIZE; i++)
+                MM_t xy_2[MM_PACKS];
+                for (int i = 0; i < MM_PACKS; i++)
                     xy_2[i] = _MM_MUL(x[i], y[i]);
-                for (int i = 0; i < MM_PACK_SIZE; i++)
+                for (int i = 0; i < MM_PACKS; i++)
                     xy_2[i] = _MM_ADD(xy_2[i], xy_2[i]);
 
                 // x = x2 - y2 + x0;
-                for (int i = 0; i < MM_PACK_SIZE; i++)
+                for (int i = 0; i < MM_PACKS; i++)
                     x[i] = _MM_ADD(_MM_SUB(x2[i],y2[i]), x0[i]);
 
                 // y = xy_2    + y0;
-                for (int i = 0; i < MM_PACK_SIZE; i++)
+                for (int i = 0; i < MM_PACKS; i++)
                     y[i] = _MM_ADD(xy_2[i], y0[i]);
 
             }
@@ -374,10 +375,10 @@ int calculateMandelbrotOptimized(const mdContext_t md) {
         // !Alignment is controlled by MD_ALIGN. By default 64 bytes for any store instruction
         // ! ix += PACKED_SIZE doesn't break align
         #ifdef MANDELBROT_DOUBLE
-            for (int i = 0; i < MM_PACK_SIZE; i++)
+            for (int i = 0; i < MM_PACKS; i++)
                 _MM_CVTEPI64_EPI32_STORE(&escapeN[iy*WIDTH +ix + PACKED_SIZE*i], escapeIter[i]);
         #else
-            for (int i = 0; i < MM_PACK_SIZE; i++)
+            for (int i = 0; i < MM_PACKS; i++)
                 _MM_STORE_SI((MMi_t *)&escapeN[iy*WIDTH +ix + PACKED_SIZE*i], escapeIter[i]);
         #endif
         }
@@ -474,6 +475,7 @@ int calculateMandelbrotAutoVec(const mdContext_t md) {
 }
 
 int convertItersToColor(const mdContext_t md) {
+    // Idea: calculate exact colors for 256 iters and interpolate between others
     const int maxIteri = md.maxIter;
     // const float maxIterf = (float)md.maxIter;
 

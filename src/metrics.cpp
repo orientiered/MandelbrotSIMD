@@ -136,6 +136,7 @@ int getProgramAndRunInfo(char *str, const mdContext_t md) {
                         "PLANE_WIDTH: %.5f\n"
                         "CENTER: %.3f, %.3f\n"
                         "MM_SIZE: %d\n"
+                        "MM_PACKS: %d\n"
                         "Auto vectorization size: %d\n"
                         "FLOAT TYPE: %s\n"
                         "COMPILER: %s\n"
@@ -145,6 +146,7 @@ int getProgramAndRunInfo(char *str, const mdContext_t md) {
                         MD_DEFAULT_PLANE_WIDTH,
                         md.centerX, md.centerY,
                         MM_SIZE,
+                        MM_PACKS,
                         AUTO_VEC_PACK_SIZE,
                         MD_FLOAT_TYPE_STR,
                         _COMPILER, compileFlags);

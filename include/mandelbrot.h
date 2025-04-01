@@ -6,8 +6,12 @@
 /*================================= TYPEDEFS ============================================*/
 
 /// @brief Uncomment type you want to use
-// #define MANDELBROT_FLOAT
-#define MANDELBROT_DOUBLE
+#define MANDELBROT_FLOAT
+// #define MANDELBROT_DOUBLE
+
+/// @brief Number of packs of md_float that are processed in one iteration
+/// Improves conveyorization by reducing data dependency
+#define MM_PACKS 5 
 
 //! CRUCIAL PARAMETER
 //! Size of vector register in bits
@@ -19,7 +23,7 @@
 
 /// @brief Number of md_floats that will be processed simultaneously
 /// @brief Used only in version that is vectorized automatically
-#define AUTO_VEC_PACK_SIZE 32
+#define AUTO_VEC_PACK_SIZE 64
 
 /// @brief Float type used for calculations
 #if defined(MANDELBROT_FLOAT)

@@ -49,7 +49,7 @@ int saveMandelbrotTestResult(FILE *file, const testTime_t testResult, const char
 /// Included info: resolution, center coordinates, maximum number of iterations,
 /// width of rendered part of coordinate plane, type of fp number used in calculations,
 /// size of pack in calculateMandelbrotAutoVec,
-/// bitness of used SIMD instruction set (128, 256, 512) in calculateMandelbrotOptimized
+/// bitness of used SIMD instruction set (128, 256, 512) in calculateMandelbrotOptimized, number of packs of MM registers
 /// compiler and compile flags (they are provided with _COMPILER and _COMPILE_FLAGS defines made by compiler in metrics.cpp)
 /// @param str String to write info. Make sure it is big enough (512 bytes e.g.), because there's no checks for overflow
 /// @param md  Context (parameters) of mandelbrot set
