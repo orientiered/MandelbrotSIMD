@@ -142,7 +142,7 @@ int getProgramAndRunInfo(char *str, const mdContext_t md) {
                         "COMPILER: %s\n"
                         "COMPILE FLAGS: %s\n",
                         md.WIDTH, md.HEIGHT,
-                        MD_MAX_ITER,
+                        MD_DEFAULT_MAX_ITER,
                         MD_DEFAULT_PLANE_WIDTH,
                         md.centerX, md.centerY,
                         MM_SIZE,

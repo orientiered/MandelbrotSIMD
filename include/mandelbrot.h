@@ -6,8 +6,8 @@
 /*================================= TYPEDEFS ============================================*/
 
 /// @brief Uncomment type you want to use
-#define MANDELBROT_FLOAT
-// #define MANDELBROT_DOUBLE
+// #define MANDELBROT_FLOAT
+#define MANDELBROT_DOUBLE
 
 /// @brief Number of packs of md_float that are processed in one iteration
 /// Improves conveyorization by reducing data dependency
@@ -46,12 +46,16 @@ typedef struct {
     md_float centerX, centerY;  ///< Coordinates of center position on complex plane
     md_float scale;             ///< Scale = (unit length) / (pixels per unit length)
     int maxIter;                ///< Maximum number of iterations per dot
+    uint32_t *colorsPrecalc;    ///< Precalculated colors for each iteration
 } mdContext_t;
 
 /*================================ CONSTANTS ============================================*/
 
 /// @brief Maximum number of iterations per pixel (default value)
-const int MD_MAX_ITER = 256;
+const int MD_DEFAULT_MAX_ITER = 256;
+
+/// @brief Global maximum for maxIter
+const int MD_ITERS_LIMIT = 4096;
 
 /// @brief Default center position
 const md_float MD_DEFAULT_X = -0.5;
@@ -73,6 +77,10 @@ mdContext_t mdContextCtor(int WIDTH, int HEIGHT);
 
 /// @brief Destroy mandelbrot context and free resources
 int mdContextDtor(mdContext_t *context);
+
+//// @brief Calculate color for each iteration from 0 to md.maxIter and store them in md.colorsPrecals
+/// Run this function when maxIter changes 
+int precalculateColors(const mdContext_t md);
 
 /// @brief Calculate escape iteration for each pixel
 int calculateMandelbrot(const mdContext_t md);

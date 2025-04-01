@@ -1,8 +1,35 @@
+#include <cstdint>
 #include <mandelbrot.h>
 
 #include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
+
+
+/// @brief Get 32-bit rgba color from r,g,b
+static inline uint32_t generateColor(int r, int g, int b) {
+    // SFML uses rgba
+    return (r << 0) + (g << 8) + (b << 16) + (255 << 24);
+}
+
+static inline uint32_t colorFromIter(const uint32_t iter, const uint32_t maxIter) {
+    if (iter == maxIter)
+        return 0;
+
+    const uint8_t red   = MD_DEFAULT_MAX_ITER - iter;
+    const uint8_t green = 95*(1+sin(sqrt(iter)*(1/1.1)));
+    const uint8_t blue  = 40. * logf(iter);
+
+    return generateColor(red, green, blue);
+}
+
+int precalculateColors(const mdContext_t md) {
+    for (int iter = 0; iter <= md.maxIter; iter++) {
+        md.colorsPrecalc[iter] = colorFromIter(iter, md.maxIter); 
+    }
+
+    return 0;
+}
 
 mdContext_t mdContextCtor(int WIDTH, int HEIGHT) {
     const int ARRAY_ALIGNMENT = MD_ALIGN / sizeof(uint32_t);
@@ -17,10 +44,10 @@ mdContext_t mdContextCtor(int WIDTH, int HEIGHT) {
         HEIGHT = -HEIGHT;
     }
 
-    if ((WIDTH % AUTO_VEC_PACK_SIZE != 0) || WIDTH % ( MM_SIZE / sizeof(md_float) ) != 0) {
+    if ((WIDTH % AUTO_VEC_PACK_SIZE != 0) || WIDTH % ( MM_SIZE * MM_PACKS / sizeof(md_float) ) != 0) {
         printf("Not compatible width. Searching for nearest appropriate width: %d ->", WIDTH);
 
-        while ((WIDTH % AUTO_VEC_PACK_SIZE != 0) || WIDTH % ( MM_SIZE / sizeof(md_float) ) != 0) {
+        while ((WIDTH % AUTO_VEC_PACK_SIZE != 0) || WIDTH % ( MM_SIZE * MM_PACKS / sizeof(md_float) ) != 0) {
             WIDTH++;
         }
 
@@ -33,11 +60,14 @@ mdContext_t mdContextCtor(int WIDTH, int HEIGHT) {
         .WIDTH   = WIDTH,        .HEIGHT  = HEIGHT,
         .centerX = MD_DEFAULT_X, .centerY = MD_DEFAULT_Y,
         .scale   = MD_DEFAULT_PLANE_WIDTH / WIDTH,
-        .maxIter = MD_MAX_ITER
+        .maxIter = MD_DEFAULT_MAX_ITER,
+        .colorsPrecalc = (uint32_t *) calloc(MD_ITERS_LIMIT, sizeof(uint32_t))
     };
 
     int addrShift = ((MD_ALIGN - (size_t)context.UNALIGNED_escapeN % MD_ALIGN) % MD_ALIGN) / sizeof(uint32_t);
     context.escapeN = context.UNALIGNED_escapeN + addrShift;
+
+    precalculateColors(context);
 
     return context;
 }
@@ -45,14 +75,11 @@ mdContext_t mdContextCtor(int WIDTH, int HEIGHT) {
 int mdContextDtor(mdContext_t *context) {
     free(context->screen);
     free(context->UNALIGNED_escapeN);
+    free(context->colorsPrecalc);
     return 0;
 }
 
-/// @brief Get 32-bit rgba color from r,g,b
-static inline uint32_t generateColor(int r, int g, int b) {
-    // SFML uses rgba
-    return (r << 0) + (g << 8) + (b << 16) + (255 << 24);
-}
+
 
 int calculateMandelbrot(const mdContext_t md) {
     /*Unpacking values from mdContext_t for convinience */
@@ -80,7 +107,7 @@ int calculateMandelbrot(const mdContext_t md) {
             md_float x = x0, y = y0;
 
             int iter = 0;
-            for (; iter < MD_MAX_ITER; iter++) {
+            for (; iter < MD_DEFAULT_MAX_ITER; iter++) {
                 md_float x2   = x * x,
                          y2   = y * y,
                          xy_2 = x * y * 2.0;
@@ -476,21 +503,11 @@ int calculateMandelbrotAutoVec(const mdContext_t md) {
 
 int convertItersToColor(const mdContext_t md) {
     // Idea: calculate exact colors for 256 iters and interpolate between others
-    const int maxIteri = md.maxIter;
-    // const float maxIterf = (float)md.maxIter;
 
     for (int idx = 0; idx < md.WIDTH * md.HEIGHT; idx++) {
         int iter = md.escapeN[idx];
 
-        if (iter == maxIteri)
-            md.screen[idx] = 0; // Black
-        else {
-            const uint8_t red   = MD_MAX_ITER - iter;
-            const uint8_t green = 95*(1+sin(sqrt(iter)*(1/1.1)));
-            const uint8_t blue  = 40. * logf(iter);
-
-            md.screen[idx] = generateColor(red, green, blue);
-        }
+        md.screen[idx] = md.colorsPrecalc[iter];
 
     }
 

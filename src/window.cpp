@@ -75,13 +75,23 @@ int windowHandleEvents(windowContext_t *context, mdContext_t *md) {
                         md->scale *= 1./MD_SCALE_FACTOR;
                         break;
                     case sf::Keyboard::Left:
-                        md->maxIter = (int)(md->maxIter * (1./MD_ITERS_FACTOR));
-                        if (md->maxIter < MD_MAX_ITER / 2)
-                            md->maxIter = MD_MAX_ITER / 2;
+                    {
+                        const int newMaxIter = (int)(md->maxIter * (1./MD_ITERS_FACTOR)); 
+                        if (MD_DEFAULT_MAX_ITER <= newMaxIter) {
+                            md->maxIter = newMaxIter; 
+                            precalculateColors(*md);
+                        }
                         break;
-                    case sf::Keyboard::Right:
-                        md->maxIter = (int)(md->maxIter * MD_ITERS_FACTOR);
+                    }
+                    case sf::Keyboard::Right: 
+                    {
+                        const int newMaxIter = (int)(md->maxIter * MD_ITERS_FACTOR); 
+                        if (newMaxIter <= MD_ITERS_LIMIT) {
+                            md->maxIter = newMaxIter;
+                            precalculateColors(*md);
+                        }
                         break;
+                    }
                     case sf::Keyboard::Escape:
                         context->window.close();
                         break;
