@@ -25,7 +25,7 @@ static inline uint32_t colorFromIter(const uint32_t iter, const uint32_t maxIter
 
 int precalculateColors(const mdContext_t md) {
     for (int iter = 0; iter <= md.maxIter; iter++) {
-        md.colorsPrecalc[iter] = colorFromIter(iter, md.maxIter); 
+        md.colorsPrecalc[iter] = colorFromIter(iter, md.maxIter);
     }
 
     return 0;
@@ -276,6 +276,8 @@ int calculateMandelbrot(const mdContext_t md) {
 
 int calculateMandelbrotOptimized(const mdContext_t md) {
 
+    #define INTRIN_LOOP(i) for (int i = 0; i < MM_PACKS; i++)
+
     /*Unpacking values from mdContext_t for convinience */
     uint32_t *escapeN = md.escapeN;
     const md_float centerX = md.centerX, centerY = md.centerY;
@@ -306,14 +308,12 @@ int calculateMandelbrotOptimized(const mdContext_t md) {
         // Setting y0: the same for all x
         // y0 = centerY + (HEIGHT / 2 - iy) * scale
         MM_t y0[MM_PACKS];
-        for (int i = 0; i < MM_PACKS; i++)
-            y0[i] = _MM_SET1(centerY + (HEIGHT / 2 - iy) * scale);
+        INTRIN_LOOP(i) y0[i] = _MM_SET1(centerY + (HEIGHT / 2 - iy) * scale);
 
         for (int ix = 0; ix < WIDTH; ix+= PACKED_SIZE*MM_PACKS) {
             // x0[k] = centerX - scale*WIDTH / 2 + ix * scale + initDelta[k]
             MM_t x0[MM_PACKS];
-            for (int i = 0; i < MM_PACKS; i++)
-                x0[i] = _MM_ADD(_MM_SET1(centerX - scale*WIDTH / 2 + (ix + PACKED_SIZE * i) * scale), initDelta);
+            INTRIN_LOOP(i) x0[i] = _MM_ADD(_MM_SET1(centerX - scale*WIDTH / 2 + (ix + PACKED_SIZE * i) * scale), initDelta);
             // x0 = _MM_ADD(x0, initDelta);
 
             /*
@@ -322,29 +322,23 @@ int calculateMandelbrotOptimized(const mdContext_t md) {
                 y' = 2xy + y_0
             */
             MM_t x[MM_PACKS];
-            for (int i = 0; i < MM_PACKS; i++)
-                x[i] = x0[i];
+            INTRIN_LOOP(i) x[i] = x0[i];
             MM_t y[MM_PACKS];
-            for (int i = 0; i < MM_PACKS; i++)
-                y[i] = y0[i];
+            INTRIN_LOOP(i) y[i] = y0[i];
 
             MMi_t escapeIter[MM_PACKS];
-            for (int i = 0; i < MM_PACKS; i++)
-                escapeIter[i] = _MM_SETZERO(escapeIter[i]);
+            INTRIN_LOOP(i) escapeIter[i] = _MM_SETZERO(escapeIter[i]);
 
             for (int iteration = 0; iteration < maxIter; iteration++) {
                 /* md_float x2 = x*x, y2 = y*y, xy_2 = 2*x*y; */
                 MM_t x2[MM_PACKS];
-                MM_t y2[MM_PACKS];   
-                for (int i = 0; i < MM_PACKS; i++)
-                    x2[i] = _MM_MUL(x[i], x[i]);
-                for (int i = 0; i < MM_PACKS; i++)
-                    y2[i] = _MM_MUL(y[i], y[i]);
-                
+                MM_t y2[MM_PACKS];
+                INTRIN_LOOP(i) x2[i] = _MM_MUL(x[i], x[i]);
+                INTRIN_LOOP(i) y2[i] = _MM_MUL(y[i], y[i]);
+
 
                 MM_t r2[MM_PACKS];
-                for (int i = 0; i < MM_PACKS; i++)
-                    r2[i] = _MM_ADD(x2[i], y2[i]);
+                INTRIN_LOOP(i) r2[i] = _MM_ADD(x2[i], y2[i]);
 
 
                 // This section vastly differs in AVX512 and SSE/AVX2
@@ -352,52 +346,41 @@ int calculateMandelbrotOptimized(const mdContext_t md) {
                 // Comparing r^2 <= ESCAPE_RADIUS^2
                 // cmpMask[i] (bits) = (r2[i] <= escapeR2 )
                 uint16_t cmpMask[MM_PACKS];
-                for (int i = 0; i < MM_PACKS; i++)
-                    cmpMask[i] = _MM_CMPLE_MASK(r2[i], escapeR2);
+                INTRIN_LOOP(i) cmpMask[i] = _MM_CMPLE_MASK(r2[i], escapeR2);
                 // If cmpMask == 0 => all points escaped => break
                 bool notAllEscaped = false;
-                for (int i = 0; i < MM_PACKS; i++)
-                    notAllEscaped |= cmpMask[i];
+                INTRIN_LOOP(i) notAllEscaped |= cmpMask[i];
                 if (!notAllEscaped) break;
 
                 // iter++ for points that have not escaped yet
                 // escapeIter[i]++ for i in cmpMask
-                for (int i = 0; i < MM_PACKS; i++)
-                    escapeIter[i] = _MM_MASK_ADD_EPI(escapeIter[i], cmpMask[i], logicMask);
+                INTRIN_LOOP(i) escapeIter[i] = _MM_MASK_ADD_EPI(escapeIter[i], cmpMask[i], logicMask);
             #else
                 // Comparing r^2 <= ESCAPE_RADIUS^2
                 // cmp = 0xFFFFFFF for true and 0x0 for false
                 MMi_t cmp[MM_PACKS];
-                for (int i = 0; i < MM_PACKS; i++)
-                    cmp[i] = _MM_CMPLE_TO_EPI(r2[i], escapeR2);
+                INTRIN_LOOP(i) cmp[i] = _MM_CMPLE_TO_EPI(r2[i], escapeR2);
                 // If cmp == 0 => all points escaped => break
                 bool allEscaped = true;
-                for (int i = 0; i < MM_PACKS; i++)
-                    allEscaped &= _MM_TESTZ(cmp[i], cmp[i]) ;
+                INTRIN_LOOP(i) allEscaped &= _MM_TESTZ(cmp[i], cmp[i]) ;
 
                 if (allEscaped) break;
 
                 // Converting mask to integer 1 or 0
                 // logicMask = low bit for every float in MM_t
-                for (int i = 0; i < MM_PACKS; i++)
-                    cmp[i] = _MM_AND_EPI(cmp[i], logicMask);
+                INTRIN_LOOP(i) cmp[i] = _MM_AND_EPI(cmp[i], logicMask);
                 // iter++ for points that have not escaped yet
-                for (int i = 0; i < MM_PACKS; i++)
-                    escapeIter[i] = _MM_ADD_EPI(escapeIter[i], cmp[i]);
+                INTRIN_LOOP(i) escapeIter[i] = _MM_ADD_EPI(escapeIter[i], cmp[i]);
             #endif
                 MM_t xy_2[MM_PACKS];
-                for (int i = 0; i < MM_PACKS; i++)
-                    xy_2[i] = _MM_MUL(x[i], y[i]);
-                for (int i = 0; i < MM_PACKS; i++)
-                    xy_2[i] = _MM_ADD(xy_2[i], xy_2[i]);
+                INTRIN_LOOP(i) xy_2[i] = _MM_MUL(x[i], y[i]);
+                INTRIN_LOOP(i) xy_2[i] = _MM_ADD(xy_2[i], xy_2[i]);
 
                 // x = x2 - y2 + x0;
-                for (int i = 0; i < MM_PACKS; i++)
-                    x[i] = _MM_ADD(_MM_SUB(x2[i],y2[i]), x0[i]);
+                INTRIN_LOOP(i) x[i] = _MM_ADD(_MM_SUB(x2[i],y2[i]), x0[i]);
 
                 // y = xy_2    + y0;
-                for (int i = 0; i < MM_PACKS; i++)
-                    y[i] = _MM_ADD(xy_2[i], y0[i]);
+                INTRIN_LOOP(i) y[i] = _MM_ADD(xy_2[i], y0[i]);
 
             }
 
@@ -406,11 +389,9 @@ int calculateMandelbrotOptimized(const mdContext_t md) {
         // !Alignment is controlled by MD_ALIGN. By default 64 bytes for any store instruction
         // ! ix += PACKED_SIZE doesn't break align
         #ifdef MANDELBROT_DOUBLE
-            for (int i = 0; i < MM_PACKS; i++)
-                _MM_CVTEPI64_EPI32_STORE(&escapeN[iy*WIDTH +ix + PACKED_SIZE*i], escapeIter[i]);
+            INTRIN_LOOP(i) _MM_CVTEPI64_EPI32_STORE(&escapeN[iy*WIDTH +ix + PACKED_SIZE*i], escapeIter[i]);
         #else
-            for (int i = 0; i < MM_PACKS; i++)
-                _MM_STORE_SI((MMi_t *)&escapeN[iy*WIDTH +ix + PACKED_SIZE*i], escapeIter[i]);
+            INTRIN_LOOP(i) _MM_STORE_SI((MMi_t *)&escapeN[iy*WIDTH +ix + PACKED_SIZE*i], escapeIter[i]);
         #endif
         }
     }

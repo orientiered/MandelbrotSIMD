@@ -6,16 +6,16 @@
 /*================================= TYPEDEFS ============================================*/
 
 /// @brief Uncomment type you want to use
-// #define MANDELBROT_FLOAT
-#define MANDELBROT_DOUBLE
+#define MANDELBROT_FLOAT
+// #define MANDELBROT_DOUBLE
 
 /// @brief Number of packs of md_float that are processed in one iteration
 /// Improves conveyorization by reducing data dependency
-#define MM_PACKS 3 
+#define MM_PACKS 5
 
 //! CRUCIAL PARAMETER
 //! Size of vector register in bits
-#define MM_SIZE 256    // size of current mm register
+#define MM_SIZE 512    // size of current mm register
 //! xmm -- 128 (SSE4.2)
 //! ymm -- 256 (AVX2)
 //! zmm -- 512 (AVX512)
@@ -79,7 +79,7 @@ mdContext_t mdContextCtor(int WIDTH, int HEIGHT);
 int mdContextDtor(mdContext_t *context);
 
 //// @brief Calculate color for each iteration from 0 to md.maxIter and store them in md.colorsPrecals
-/// Run this function when maxIter changes 
+/// Run this function when maxIter changes
 int precalculateColors(const mdContext_t md);
 
 /// @brief Calculate escape iteration for each pixel
