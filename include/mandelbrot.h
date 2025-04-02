@@ -2,7 +2,8 @@
 #define MANDELBROT_H
 
 #include <stdint.h>
-
+#include <thread>
+#include <mutex>
 /*================================= TYPEDEFS ============================================*/
 
 /// @brief Uncomment type you want to use
@@ -49,6 +50,23 @@ typedef struct {
     uint32_t *colorsPrecalc;    ///< Precalculated colors for each iteration
 } mdContext_t;
 
+
+const int THREAD_POOL_SIZE = 8;
+
+enum mdThreadStatus {
+    MD_THREAD_STOPPED = -1,
+    MD_THREAD_WAITING =  0,
+    MD_THREAD_WORKING =  1
+};
+
+struct threadPool_t {
+    std::thread thrdPool[THREAD_POOL_SIZE];
+    std::mutex mtx;
+    enum mdThreadStatus thrdStatus[THREAD_POOL_SIZE];
+    int currentAvailableLine;
+};
+
+
 /*================================ CONSTANTS ============================================*/
 
 /// @brief Maximum number of iterations per pixel (default value)
@@ -78,6 +96,10 @@ mdContext_t mdContextCtor(int WIDTH, int HEIGHT);
 /// @brief Destroy mandelbrot context and free resources
 int mdContextDtor(mdContext_t *context);
 
+int mdThreadPoolCtor(threadPool_t *pool, const mdContext_t *md);
+
+int mdThreadPoolDtor(threadPool_t *pool);
+
 //// @brief Calculate color for each iteration from 0 to md.maxIter and store them in md.colorsPrecals
 /// Run this function when maxIter changes
 int precalculateColors(const mdContext_t md);
@@ -87,6 +109,10 @@ int calculateMandelbrot(const mdContext_t md);
 
 /// @brief Calculate escape iteration for each pixel with intrinsics optimization
 int calculateMandelbrotOptimized(const mdContext_t md);
+
+/// @brief Run intrinsic optimized version on multiple threads
+int calculateMandelbrotThreaded(const mdContext_t md, threadPool_t *pool);
+
 
 /// @brief Calculate escape iteration for each pixel with hope that GCC vectorized code
 int calculateMandelbrotAutoVec(const mdContext_t md);

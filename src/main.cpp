@@ -4,6 +4,7 @@
 #include <stdio.h>
 
 #include <mandelbrot.h>
+
 #include <window.h>
 #include <metrics.h>
 
@@ -90,6 +91,10 @@ int main(int argc, const char *argv[]) {
 
     mdContext_t md = mdContextCtor(WIDTH, HEIGHT);
 
+    threadPool_t threadPool;
+    mdThreadPoolCtor(&threadPool, &md);
+
+
     char infoString[512] = "";
     getProgramAndRunInfo(infoString, md);
     printf("%s\n", infoString);
@@ -110,6 +115,7 @@ int main(int argc, const char *argv[]) {
 
         testMandelbrot(testRecords, md, cmdArgs.testCount, cmdArgs.testDuration);
         mdContextDtor(&md);
+        mdThreadPoolDtor(&threadPool);
         fclose(testRecords);
         return 0;
     }
@@ -124,7 +130,8 @@ int main(int argc, const char *argv[]) {
         windowHandleEvents(&context, &md);
 
         sf::Time t1 = clock.getElapsedTime();
-        mandelbrotRenderer(md);
+        // mandelbrotRenderer(md);
+        calculateMandelbrotThreaded(md, &threadPool);
         sf::Time t2 = clock.getElapsedTime();
 
         convertItersToColor(md);
@@ -143,6 +150,7 @@ int main(int argc, const char *argv[]) {
     printf("Mean render time: %.2f ms\n", (float) totalRenderTime.asMilliseconds() / total_rendered);
     printf("Mean draw   time: %.2f ms\n", (float) totalDrawTime.asMilliseconds()   / total_rendered);
     mdContextDtor(&md);
+    mdThreadPoolDtor(&threadPool);
     return 0;
 }
 

@@ -1,10 +1,11 @@
 #include <cstdint>
-#include <mandelbrot.h>
-
 #include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
+#include <thread>
+#include <mutex>
 
+#include <mandelbrot.h>
 
 /// @brief Get 32-bit rgba color from r,g,b
 static inline uint32_t generateColor(int r, int g, int b) {
@@ -274,10 +275,9 @@ int calculateMandelbrot(const mdContext_t md) {
 #endif
 
 
-int calculateMandelbrotOptimized(const mdContext_t md) {
+#define INTRIN_LOOP(i) for (int i = 0; i < MM_PACKS; i++)
 
-    #define INTRIN_LOOP(i) for (int i = 0; i < MM_PACKS; i++)
-
+static int calculateMandelbrotOptimized_base(const mdContext_t md, const int startY, const int spanY) {
     /*Unpacking values from mdContext_t for convinience */
     uint32_t *escapeN = md.escapeN;
     const md_float centerX = md.centerX, centerY = md.centerY;
@@ -304,7 +304,7 @@ int calculateMandelbrotOptimized(const mdContext_t md) {
     const MMi_t logicMask = _MM_LOAD_SI(logicMask__);
 
 
-    for (int iy = 0; iy < HEIGHT; iy++) {
+    for (int iy = startY; iy < startY + spanY; iy++) {
         // Setting y0: the same for all x
         // y0 = centerY + (HEIGHT / 2 - iy) * scale
         MM_t y0[MM_PACKS];
@@ -395,10 +395,102 @@ int calculateMandelbrotOptimized(const mdContext_t md) {
         #endif
         }
     }
+    return 0;
+}
 
+int calculateMandelbrotOptimized(const mdContext_t md) {
+    return calculateMandelbrotOptimized_base(md, 0, md.HEIGHT);
+}
 
+int calculateMandelbrotThread(const mdContext_t *md, int *shared_startY, std::mutex *mtx_startY, enum mdThreadStatus *status) {
+
+    const int MD_LINES_PER_FETCH = 4;
+
+    int startY = 0;
+    while (true) {
+        /*=========================================*/
+        // Fetching starting Y from shared value
+        mtx_startY->lock();
+        startY = *shared_startY;
+        if (startY >= 0 && startY < md->HEIGHT)
+            *shared_startY = *shared_startY + MD_LINES_PER_FETCH;
+        // fprintf(stderr, "shared_startY = %d\n", *shared_startY);
+        mtx_startY->unlock();
+        /*=========================================*/
+
+        // startY < 0 is signal to exit
+        if (startY < 0) {
+            *status = MD_THREAD_STOPPED;
+            break;
+        }
+
+        // Doing nothing if there's no available lines
+        if (startY >= md->HEIGHT) {
+            *status = MD_THREAD_WAITING;
+            continue;
+        }
+
+        // fprintf(stderr, "Took %d line to calc\n", startY);
+        *status = MD_THREAD_WORKING;
+        calculateMandelbrotOptimized_base(*md, startY, MD_LINES_PER_FETCH);
+    }
     return 0;
 
+}
+
+int mdThreadPoolCtor(threadPool_t *pool, const mdContext_t *md) {
+    // Threads are sleeping after init
+    pool->currentAvailableLine = md->HEIGHT;
+
+    // Spawning threads
+    for (int i = 0; i < THREAD_POOL_SIZE; i++) {
+        pool->thrdStatus[i] = MD_THREAD_WAITING;
+        pool->thrdPool[i] = std::thread(calculateMandelbrotThread,
+                                        md, &pool->currentAvailableLine, &pool->mtx, &pool->thrdStatus[i]);
+
+    }
+
+    return 0;
+}
+
+int mdThreadPoolDtor(threadPool_t *pool) {
+    // Signal for threads to stop execution
+    pool->currentAvailableLine = -1;
+
+    // Joining threads
+    for (int i = 0; i < THREAD_POOL_SIZE; i++)
+        pool->thrdPool[i].join();
+
+    return 0;
+}
+
+int calculateMandelbrotThreaded(const mdContext_t md, threadPool_t *pool) {
+    // resetting line counter
+    pool->mtx.lock();
+    pool->currentAvailableLine = 0;
+    pool->mtx.unlock();
+
+    // Waiting
+    while (true) {
+        if (pool->currentAvailableLine < md.HEIGHT) {
+            // fprintf(stderr, "%d\n", pool->currentAvailableLine);
+            continue;
+        }
+
+        bool rendered = true;
+        for (int i = 0; i < THREAD_POOL_SIZE; i++) {
+            // fprintf(stderr, "%d", pool->thrdStatus[i]);
+            rendered = rendered && (pool->thrdStatus[i] == MD_THREAD_WAITING);
+
+        }
+        fprintf(stderr, "\n");
+        if (rendered) {
+            pool->currentAvailableLine++;
+            break;
+        }
+    }
+
+    return 0;
 }
 
 int calculateMandelbrotAutoVec(const mdContext_t md) {
