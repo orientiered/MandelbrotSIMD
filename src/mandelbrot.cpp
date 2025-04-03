@@ -307,8 +307,8 @@ static int calculateMandelbrotOptimized_base(const mdContext_t md, const int sta
     for (int iy = startY; iy < startY + spanY; iy++) {
         // Setting y0: the same for all x
         // y0 = centerY + (HEIGHT / 2 - iy) * scale
-        MM_t y0[MM_PACKS];
-        INTRIN_LOOP(i) y0[i] = _MM_SET1(centerY + (HEIGHT / 2 - iy) * scale);
+        MM_t y0;
+        y0 = _MM_SET1(centerY + (HEIGHT / 2 - iy) * scale);
 
         for (int ix = 0; ix < WIDTH; ix+= PACKED_SIZE*MM_PACKS) {
             // x0[k] = centerX - scale*WIDTH / 2 + ix * scale + initDelta[k]
@@ -324,7 +324,7 @@ static int calculateMandelbrotOptimized_base(const mdContext_t md, const int sta
             MM_t x[MM_PACKS];
             INTRIN_LOOP(i) x[i] = x0[i];
             MM_t y[MM_PACKS];
-            INTRIN_LOOP(i) y[i] = y0[i];
+            INTRIN_LOOP(i) y[i] = y0;
 
             MMi_t escapeIter[MM_PACKS];
             INTRIN_LOOP(i) escapeIter[i] = _MM_SETZERO(escapeIter[i]);
@@ -380,7 +380,7 @@ static int calculateMandelbrotOptimized_base(const mdContext_t md, const int sta
                 INTRIN_LOOP(i) x[i] = _MM_ADD(_MM_SUB(x2[i],y2[i]), x0[i]);
 
                 // y = xy_2    + y0;
-                INTRIN_LOOP(i) y[i] = _MM_ADD(xy_2[i], y0[i]);
+                INTRIN_LOOP(i) y[i] = _MM_ADD(xy_2[i], y0);
 
             }
 
@@ -493,6 +493,7 @@ int calculateMandelbrotThreaded(const mdContext_t md, threadPool_t *pool) {
     return 0;
 }
 
+#define AUTO_VEC_LOOP(i) for (int i = 0; i < AUTO_VEC_PACK_SIZE; i++)
 int calculateMandelbrotAutoVec(const mdContext_t md) {
     /*Unpacking values from mdContext_t for convinience */
     uint32_t *escapeN = md.escapeN;
@@ -504,74 +505,58 @@ int calculateMandelbrotAutoVec(const mdContext_t md) {
     const md_float ESCAPE_RADIUS2 = MD_ESCAPE_RADIUS * MD_ESCAPE_RADIUS;
 
     md_float initDelta[AUTO_VEC_PACK_SIZE] = {};
-    for (int i = 0; i < AUTO_VEC_PACK_SIZE; i++)
-        initDelta[i] = scale*i;
+    AUTO_VEC_LOOP(i) initDelta[i] = scale*i;
 
     for (int iy = 0; iy < HEIGHT; iy++) {
         const md_float y0_single = centerY + (HEIGHT / 2 - iy) * scale;
 
         md_float y0[AUTO_VEC_PACK_SIZE] = {};
-        for (int index = 0; index < AUTO_VEC_PACK_SIZE; index++)
-            y0[index] = y0_single;
+        AUTO_VEC_LOOP(index) y0[index] = y0_single;
 
         for (int ix = 0; ix < WIDTH; ix += AUTO_VEC_PACK_SIZE) {
             const md_float x0_start = centerX - scale*WIDTH / 2 + ix*scale;
 
             md_float x0[AUTO_VEC_PACK_SIZE] = {};
-            for (int index = 0; index < AUTO_VEC_PACK_SIZE; index++)
-                x0[index] = x0_start + initDelta[index];
+            AUTO_VEC_LOOP(index) x0[index] = x0_start + initDelta[index];
 
             md_float x[AUTO_VEC_PACK_SIZE] = {};
-            for (int index = 0; index < AUTO_VEC_PACK_SIZE; index++)
-                x[index] = x0[index];
+            AUTO_VEC_LOOP(index) x[index] = x0[index];
 
             md_float y[AUTO_VEC_PACK_SIZE] = {};
-            for (int index = 0; index < AUTO_VEC_PACK_SIZE; index++)
-                y[index] = y0[index];
+            AUTO_VEC_LOOP(index) y[index] = y0[index];
 
             uint32_t escapeIter[AUTO_VEC_PACK_SIZE] = {0};
 
             for (int iteration = 0; iteration < maxIter; iteration++) {
                 md_float x2[AUTO_VEC_PACK_SIZE] = {};
-                for (int index = 0; index < AUTO_VEC_PACK_SIZE; index++)
-                    x2[index] =  x[index] * x[index];
+                AUTO_VEC_LOOP(index) x2[index] =  x[index] * x[index];
 
                 md_float y2[AUTO_VEC_PACK_SIZE] = {};
-                for (int index = 0; index < AUTO_VEC_PACK_SIZE; index++)
-                    y2[index] =  y[index] * y[index];
+                AUTO_VEC_LOOP(index) y2[index] =  y[index] * y[index];
 
                 md_float r2[AUTO_VEC_PACK_SIZE] = {};
-                for (int index = 0; index < AUTO_VEC_PACK_SIZE; index++)
-                    r2[index] = x2[index] + y2[index];
+                AUTO_VEC_LOOP(index) r2[index] = x2[index] + y2[index];
 
                 uint32_t cmpMask[AUTO_VEC_PACK_SIZE] = {};
-                for (int index = 0; index < AUTO_VEC_PACK_SIZE; index++)
-                    cmpMask[index] = (r2[index] <= ESCAPE_RADIUS2);
+                AUTO_VEC_LOOP(index) cmpMask[index] = (r2[index] <= ESCAPE_RADIUS2);
 
                 int notEscaped = 0;
-                for (int index = 0; index < AUTO_VEC_PACK_SIZE; index++)
-                    notEscaped |= cmpMask[index];
+                AUTO_VEC_LOOP(index) notEscaped |= cmpMask[index];
 
                 if (notEscaped == 0) break;
-
-                for (int index = 0; index < AUTO_VEC_PACK_SIZE; index++)
-                    escapeIter[index] = escapeIter[index] + cmpMask[index];
+                AUTO_VEC_LOOP(index) escapeIter[index] = escapeIter[index] + cmpMask[index];
 
                 md_float xy[AUTO_VEC_PACK_SIZE] = {};
-                for (int index = 0; index < AUTO_VEC_PACK_SIZE; index++)
-                    xy[index] = x[index] * y[index];
+                AUTO_VEC_LOOP(index) xy[index] = x[index] * y[index];
 
                 // x = x^2 - y^2 + x0;
-                for (int index = 0; index < AUTO_VEC_PACK_SIZE; index++)
-                    x[index] = x2[index] - y2[index] + x0[index];
+                AUTO_VEC_LOOP(index) x[index] = x2[index] - y2[index] + x0[index];
                 // y = 2xy       + y0
-                for (int index = 0; index < AUTO_VEC_PACK_SIZE; index++)
-                    y[index] = xy[index] + xy[index] + y0[index];
+                AUTO_VEC_LOOP(index) y[index] = xy[index] + xy[index] + y0[index];
             }
 
             const int writeOffset = iy*WIDTH + ix;
-            for (int index = 0; index < AUTO_VEC_PACK_SIZE; index++)
-                escapeN[writeOffset + index] = escapeIter[index];
+            AUTO_VEC_LOOP(index) escapeN[writeOffset + index] = escapeIter[index];
         }
     }
 
