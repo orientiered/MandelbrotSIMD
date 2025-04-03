@@ -4,7 +4,8 @@
 #include <stdint.h>
 #include <thread>
 #include <mutex>
-/*================================= TYPEDEFS ============================================*/
+
+/*================================= IMPORTANT CONSTANTS ============================================*/
 
 /// @brief Uncomment type you want to use
 #define MANDELBROT_FLOAT
@@ -26,6 +27,11 @@
 /// @brief Used only in version that is vectorized automatically
 #define AUTO_VEC_PACK_SIZE 64
 
+/// @brief Number of threads for rendering
+const int THREAD_POOL_SIZE = 4;
+
+/*============================== FLOAT TYPE =============================================*/
+
 /// @brief Float type used for calculations
 #if defined(MANDELBROT_FLOAT)
     typedef float md_float;
@@ -37,35 +43,6 @@
 #else
     #error Type error: use only MANDELBROAT_FLOAT or MANDELBROAT_DOUBLE
 #endif
-
-/// @brief Context with essential info to calculate mandlebrot set
-typedef struct {
-    uint32_t *screen;           ///< Array of rgba pixels
-    uint32_t *UNALIGNED_escapeN; ///< Array with escape iterations for every pixel
-    uint32_t *escapeN;          ///< Aligned by MD_ALIGN bytes version of UNALIGNED_escapeN
-    int WIDTH, HEIGHT;          ///< Width and height of the screen
-    md_float centerX, centerY;  ///< Coordinates of center position on complex plane
-    md_float scale;             ///< Scale = (unit length) / (pixels per unit length)
-    int maxIter;                ///< Maximum number of iterations per dot
-    uint32_t *colorsPrecalc;    ///< Precalculated colors for each iteration
-} mdContext_t;
-
-
-const int THREAD_POOL_SIZE = 4;
-
-enum mdThreadStatus {
-    MD_THREAD_STOPPED = -1,
-    MD_THREAD_WAITING =  0,
-    MD_THREAD_WORKING =  1
-};
-
-typedef struct threadPool_t {
-    std::thread thrdPool[THREAD_POOL_SIZE];
-    std::mutex mtx;
-    enum mdThreadStatus thrdStatus[THREAD_POOL_SIZE];
-    int currentAvailableLine;
-} threadPool_t;
-
 
 /*================================ CONSTANTS ============================================*/
 
@@ -86,6 +63,37 @@ const md_float MD_ESCAPE_RADIUS = 10.0;
 
 /// @brief Alignment in bytes to ensure correct store instruction
 const int MD_ALIGN = 64;
+
+/*================================= STRUCTS ============================================*/
+
+enum mdThreadStatus {
+    MD_THREAD_STOPPED = -1, ///< Thread stopped it's execution
+    MD_THREAD_WAITING =  0, ///< Thread completed it's work and waiting
+    MD_THREAD_WORKING =  1  ///< Thread calculates pixels
+};
+
+typedef struct threadPool_t {
+    std::thread thrdPool[THREAD_POOL_SIZE];             ///< Array with threads
+    std::mutex mtx;                                     ///< Mutex for safe currentAvailableLine reading and writing
+    enum mdThreadStatus thrdStatus[THREAD_POOL_SIZE];   ///< Array with status of each thread
+    int currentAvailableLine;                           ///< Number of first line available for rendering
+} threadPool_t;
+
+/// @brief Context with essential info to calculate mandlebrot set
+typedef struct {
+    uint32_t *screen;           ///< Array of rgba pixels
+    uint32_t *UNALIGNED_escapeN; ///< Array with escape iterations for every pixel
+    uint32_t *escapeN;          ///< Aligned by MD_ALIGN bytes version of UNALIGNED_escapeN
+    int WIDTH, HEIGHT;          ///< Width and height of the screen
+    md_float centerX, centerY;  ///< Coordinates of center position on complex plane
+    md_float scale;             ///< Scale = (unit length) / (pixels per unit length)
+    int maxIter;                ///< Maximum number of iterations per dot
+    uint32_t *colorsPrecalc;    ///< Precalculated colors for each iteration
+
+    threadPool_t *thrdPool;     ///< Pointer to struct with threads that will compute mandelbrot set
+} mdContext_t;
+
+
 
 /*================================ FUNCTIONS ============================================*/
 
@@ -111,7 +119,8 @@ int calculateMandelbrot(const mdContext_t md);
 int calculateMandelbrotOptimized(const mdContext_t md);
 
 /// @brief Run intrinsic optimized version on multiple threads
-int calculateMandelbrotThreaded(const mdContext_t md, threadPool_t *pool);
+// Requieres initialization of thrdPool field
+int calculateMandelbrotThreaded(const mdContext_t md);
 
 
 /// @brief Calculate escape iteration for each pixel with hope that GCC vectorized code

@@ -473,7 +473,9 @@ int mdThreadPoolDtor(threadPool_t *pool) {
 }
 
 
-int calculateMandelbrotThreaded(const mdContext_t md, threadPool_t *pool) {
+int calculateMandelbrotThreaded(const mdContext_t md) {
+    threadPool_t *pool = md.thrdPool;
+
     // resetting line counter
     pool->mtx.lock();
     pool->currentAvailableLine = 0;

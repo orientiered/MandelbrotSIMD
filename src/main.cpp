@@ -10,24 +10,6 @@
 
 #include <string.h>
 
-int testMandelbrot(FILE *file, const mdContext_t md, const unsigned test_count, const sf::Time duration) {
-
-    printf("Running unoptimized version...\n");
-    testTime_t noOptTime = testMandelbrotFunction(calculateMandelbrot, md, test_count, duration);
-    saveMandelbrotTestResult(file, noOptTime, "No optimizations");
-
-    printf("\nRunning optimized version...\n");
-    testTime_t optTime   = testMandelbrotFunction(calculateMandelbrotOptimized, md, test_count, duration);
-    saveMandelbrotTestResult(file, optTime, "Intrinsic optimizations");
-
-    printf("\nRunning autoVec version...\n");
-    testTime_t autoVecTime   = testMandelbrotFunction(calculateMandelbrotAutoVec, md, test_count, duration);
-    saveMandelbrotTestResult(file, autoVecTime, "Automatic vectorization by compiler");
-
-
-    return 0;
-}
-
 typedef struct {
     bool testMode;
     unsigned testCount;
@@ -36,6 +18,93 @@ typedef struct {
 
 static const unsigned DEFAULT_TEST_COUNT = 10;
 static const float    DEFAULT_TEST_TIME  = 5.0; // seconds
+cmdArgsData_t parseCmdArgs(int argc, const char *argv[]);
+
+
+
+int main(int argc, const char *argv[]) {
+    typedef int (*mandelbrotFunc_t)(const mdContext_t md);
+    const char *testsInfoFilename = "tests.md";
+    const int WIDTH  = 1920;
+    const int HEIGHT = 1080;
+    const mandelbrotFunc_t mandelbrotRenderer = calculateMandelbrotThreaded;
+
+    mdContext_t md = mdContextCtor(WIDTH, HEIGHT);
+
+    threadPool_t threadPool;
+    md.thrdPool = &threadPool;
+    // thread pool is not initialized
+
+    char infoString[512] = "";
+    getProgramAndRunInfo(infoString, md);
+    printf("%s\n", infoString);
+
+    cmdArgsData_t cmdArgs = parseCmdArgs(argc, argv);
+
+    uint32_t total_rendered = 0;
+
+    sf::Clock clock;
+
+    if (cmdArgs.testMode) {
+        FILE *testRecords = fopen(testsInfoFilename, "a");
+        fprintf(testRecords, "\n# Test session\n"
+                             "## General information:\n"
+                             "```\n"
+                             "%s"
+                             "```\n", infoString);
+
+        testMandelbrot(testRecords, md, cmdArgs.testCount, cmdArgs.testDuration);
+        mdContextDtor(&md);
+        fclose(testRecords);
+        return 0;
+    }
+
+    windowContext_t context;
+    windowCtor(&context, md.WIDTH, md.HEIGHT, "Mandelbrot");
+    
+    /*==================================================*/
+    if (mandelbrotRenderer == calculateMandelbrotThreaded)
+        mdThreadPoolCtor(&threadPool, &md);
+    /*==================================================*/
+
+
+    sf::Time totalDrawTime   = sf::microseconds(0);
+    sf::Time totalRenderTime = sf::microseconds(0);
+
+    while (context.window.isOpen()) {
+        windowHandleEvents(&context, &md);
+
+        /*=================================*/
+        sf::Time t1 = clock.getElapsedTime();
+        mandelbrotRenderer(md);
+        sf::Time t2 = clock.getElapsedTime();
+        /*=================================*/
+
+        convertItersToColor(md);
+        windowDraw(&context, md);
+
+        sf::Time t3 = clock.getElapsedTime();
+        total_rendered++;
+        totalDrawTime   += t3 - t2;
+        totalRenderTime += t2 - t1;
+        fprintf(stderr, "\r%u; render: %d draw: %d" , total_rendered, (t2-t1).asMilliseconds(), (t3-t2).asMilliseconds());
+
+    }
+
+    printf("\n\nStats:\n");
+    printf("Total frames: %u\n", total_rendered);
+    printf("Mean render time: %.2f ms\n", (float) totalRenderTime.asMilliseconds() / total_rendered);
+    printf("Mean draw   time: %.2f ms\n", (float) totalDrawTime.asMilliseconds()   / total_rendered);
+    mdContextDtor(&md);
+
+    /*==================================================*/
+    if (mandelbrotRenderer == calculateMandelbrotThreaded)
+        mdThreadPoolDtor(&threadPool);
+    /*==================================================*/
+
+    return 0;
+}
+
 
 cmdArgsData_t parseCmdArgs(int argc, const char *argv[]) {
     cmdArgsData_t data = {false, 0, sf::Time::Zero};
@@ -81,77 +150,3 @@ cmdArgsData_t parseCmdArgs(int argc, const char *argv[]) {
 
     return data;
 }
-
-int main(int argc, const char *argv[]) {
-    typedef int (*mandelbrotFunc_t)(const mdContext_t md);
-    const char *testsInfoFilename = "tests.md";
-    const int WIDTH  = 1920;
-    const int HEIGHT = 1080;
-    const mandelbrotFunc_t mandelbrotRenderer = calculateMandelbrotOptimized;
-
-    mdContext_t md = mdContextCtor(WIDTH, HEIGHT);
-
-    threadPool_t threadPool;
-    mdThreadPoolCtor(&threadPool, &md);
-
-
-    char infoString[512] = "";
-    getProgramAndRunInfo(infoString, md);
-    printf("%s\n", infoString);
-
-    cmdArgsData_t cmdArgs = parseCmdArgs(argc, argv);
-
-    uint32_t total_rendered = 0;
-
-    sf::Clock clock;
-
-    if (cmdArgs.testMode) {
-        FILE *testRecords = fopen(testsInfoFilename, "a");
-        fprintf(testRecords, "\n# Test session\n"
-                             "## General information:\n"
-                             "```\n"
-                             "%s"
-                             "```\n", infoString);
-
-        testMandelbrot(testRecords, md, cmdArgs.testCount, cmdArgs.testDuration);
-        mdContextDtor(&md);
-        mdThreadPoolDtor(&threadPool);
-        fclose(testRecords);
-        return 0;
-    }
-
-    windowContext_t context;
-    windowCtor(&context, md.WIDTH, md.HEIGHT, "Mandelbrot");
-
-    sf::Time totalDrawTime   = sf::microseconds(0);
-    sf::Time totalRenderTime = sf::microseconds(0);
-
-    while (context.window.isOpen()) {
-        windowHandleEvents(&context, &md);
-
-        sf::Time t1 = clock.getElapsedTime();
-        // mandelbrotRenderer(md);
-        calculateMandelbrotThreaded(md, &threadPool);
-        sf::Time t2 = clock.getElapsedTime();
-
-        convertItersToColor(md);
-        windowDraw(&context, md);
-
-        sf::Time t3 = clock.getElapsedTime();
-        total_rendered++;
-        totalDrawTime   += t3 - t2;
-        totalRenderTime += t2 - t1;
-        fprintf(stderr, "\r%u; render: %d draw: %d" , total_rendered, (t2-t1).asMilliseconds(), (t3-t2).asMilliseconds());
-
-    }
-
-    printf("\n\nStats:\n");
-    printf("Total frames: %u\n", total_rendered);
-    printf("Mean render time: %.2f ms\n", (float) totalRenderTime.asMilliseconds() / total_rendered);
-    printf("Mean draw   time: %.2f ms\n", (float) totalDrawTime.asMilliseconds()   / total_rendered);
-    mdContextDtor(&md);
-    mdThreadPoolDtor(&threadPool);
-    return 0;
-}
-
-

@@ -120,6 +120,35 @@ int saveMandelbrotTestResult(FILE *file, const testTime_t testResult, const char
     return 0;
 }
 
+int testMandelbrot(FILE *file, const mdContext_t md, const unsigned test_count, const sf::Time duration) {
+
+    printf("Running unoptimized version...\n");
+    testTime_t noOptTime = testMandelbrotFunction(calculateMandelbrot, md, test_count, duration);
+    saveMandelbrotTestResult(file, noOptTime, "No optimizations");
+
+    printf("\nRunning optimized version...\n");
+    testTime_t optTime   = testMandelbrotFunction(calculateMandelbrotOptimized, md, test_count, duration);
+    saveMandelbrotTestResult(file, optTime, "Intrinsic optimizations");
+
+    printf("\nRunning autoVec version...\n");
+    testTime_t autoVecTime   = testMandelbrotFunction(calculateMandelbrotAutoVec, md, test_count, duration);
+    saveMandelbrotTestResult(file, autoVecTime, "Automatic vectorization by compiler");
+
+    // Spawning threads
+    mdThreadPoolCtor(md.thrdPool, &md);
+
+    printf("\nRunning threaded version...\n");
+    testTime_t threadedTime   = testMandelbrotFunction(calculateMandelbrotThreaded, md, test_count, duration);
+    char threadedStr[50];
+    sprintf(threadedStr, "Intrinsics on %d threads", THREAD_POOL_SIZE);
+    saveMandelbrotTestResult(file, threadedTime, threadedStr);
+
+    // Stopping threads
+    mdThreadPoolDtor(md.thrdPool);
+    return 0;
+}
+
+
 
 #ifndef _COMPILE_FLAGS
 #define _COMPILE_FLAGS "Unknown"
@@ -138,6 +167,7 @@ int getProgramAndRunInfo(char *str, const mdContext_t md) {
                         "MM_SIZE: %d\n"
                         "MM_PACKS: %d\n"
                         "Auto vectorization size: %d\n"
+                        "Number of threads: %d\n"
                         "FLOAT TYPE: %s\n"
                         "COMPILER: %s\n"
                         "COMPILE FLAGS: %s\n",
@@ -148,6 +178,7 @@ int getProgramAndRunInfo(char *str, const mdContext_t md) {
                         MM_SIZE,
                         MM_PACKS,
                         AUTO_VEC_PACK_SIZE,
+                        THREAD_POOL_SIZE,
                         MD_FLOAT_TYPE_STR,
                         _COMPILER, compileFlags);
 }

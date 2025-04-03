@@ -43,6 +43,14 @@
         Best results are often get when `AUTO_VEC_PACK_SIZE` is x2 or x4 of floats you can put in one MM register.
 
         + For example: `AVX2` -> `256 bits` + `float (32bits)` -> `8` floats in `ymm` ---> `AUTO_VEC_PACK_SIZE = 32`
+    5. Choose number of threads
+
+        ```c
+        const int THREAD_POOL_SIZE = 4;
+        ```
+
+        Mandelbrot set will be rendered in parallel.
+
 + Choose screen resolution and render function in [main.cpp](src/main.cpp)
 
     ```c
@@ -57,6 +65,8 @@
   + `calculateMandelbrot` - no optimizations
   + `calculateMandelbrotOptimized` - manual optimization with SIMD intrinsics
   + `calculateMandelbrotAutoVec` - version optimized by compiler
+  + `calculateMandelbrotThreaded` - SIMD optimized version that runs in parallel
+
 + Run
 
     ```bash
@@ -92,6 +102,3 @@ Pass number of tests as argument in command line. Result will be appended to the
 Test device: Lenovo XiaoXin X16 Pro (2024)
 
 CPU: AMD Ryzen 7 8845H w/ Radeon 780M Graphics   3.80 GHz
-
-
-
