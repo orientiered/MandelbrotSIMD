@@ -51,7 +51,7 @@ typedef struct {
 } mdContext_t;
 
 
-const int THREAD_POOL_SIZE = 8;
+const int THREAD_POOL_SIZE = 4;
 
 enum mdThreadStatus {
     MD_THREAD_STOPPED = -1,
@@ -59,12 +59,12 @@ enum mdThreadStatus {
     MD_THREAD_WORKING =  1
 };
 
-struct threadPool_t {
+typedef struct threadPool_t {
     std::thread thrdPool[THREAD_POOL_SIZE];
     std::mutex mtx;
     enum mdThreadStatus thrdStatus[THREAD_POOL_SIZE];
     int currentAvailableLine;
-};
+} threadPool_t;
 
 
 /*================================ CONSTANTS ============================================*/

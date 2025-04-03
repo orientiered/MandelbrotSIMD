@@ -7,6 +7,10 @@
 
 #include <mandelbrot.h>
 
+
+volatile int MANDELBROT_DUMMY_GLOBAL = 0;
+
+
 /// @brief Get 32-bit rgba color from r,g,b
 static inline uint32_t generateColor(int r, int g, int b) {
     // SFML uses rgba
@@ -421,16 +425,20 @@ int calculateMandelbrotThread(const mdContext_t *md, int *shared_startY, std::mu
         // startY < 0 is signal to exit
         if (startY < 0) {
             *status = MD_THREAD_STOPPED;
+            fprintf(stderr, "Thread stopped\n");
             break;
         }
 
         // Doing nothing if there's no available lines
         if (startY >= md->HEIGHT) {
+            // if (*status != MD_THREAD_WAITING)
+                // fprintf(stderr, "Waiting for next frame\n");
             *status = MD_THREAD_WAITING;
+            MANDELBROT_DUMMY_GLOBAL += 3;
             continue;
         }
 
-        // fprintf(stderr, "Took %d line to calc\n", startY);
+        // fprintf(stderr, "Took %d line to calc (next = %d)\n", startY, startY + MD_LINES_PER_FETCH);
         *status = MD_THREAD_WORKING;
         calculateMandelbrotOptimized_base(*md, startY, MD_LINES_PER_FETCH);
     }
@@ -464,6 +472,7 @@ int mdThreadPoolDtor(threadPool_t *pool) {
     return 0;
 }
 
+
 int calculateMandelbrotThreaded(const mdContext_t md, threadPool_t *pool) {
     // resetting line counter
     pool->mtx.lock();
@@ -471,25 +480,37 @@ int calculateMandelbrotThreaded(const mdContext_t md, threadPool_t *pool) {
     pool->mtx.unlock();
 
     // Waiting
-    while (true) {
-        if (pool->currentAvailableLine < md.HEIGHT) {
-            // fprintf(stderr, "%d\n", pool->currentAvailableLine);
-            continue;
-        }
+    
+    // fprintf(stderr, "Starting frame, height =%d\n", md.HEIGHT);
+    while (1) {
+        bool breaking = false;
+        pool->mtx.lock();
+        breaking = pool->currentAvailableLine >= md.HEIGHT;
+        pool->mtx.unlock();
+        MANDELBROT_DUMMY_GLOBAL--;
+        if (breaking) break;
+    }
 
+    MANDELBROT_DUMMY_GLOBAL++;
+    // fprintf(stderr, "Hehe\n");
+    
+    while (1) {
         bool rendered = true;
         for (int i = 0; i < THREAD_POOL_SIZE; i++) {
+            if (MANDELBROT_DUMMY_GLOBAL == 117525)
+                fprintf(stderr, "Wow\n");
             // fprintf(stderr, "%d", pool->thrdStatus[i]);
             rendered = rendered && (pool->thrdStatus[i] == MD_THREAD_WAITING);
 
         }
-        fprintf(stderr, "\n");
+        // fprintf(stderr, "\n");
+        MANDELBROT_DUMMY_GLOBAL *= 2;
         if (rendered) {
-            pool->currentAvailableLine++;
             break;
         }
     }
 
+    // fprintf(stderr, "Frame is done\n");
     return 0;
 }
 
