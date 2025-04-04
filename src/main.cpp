@@ -24,7 +24,7 @@ cmdArgsData_t parseCmdArgs(int argc, const char *argv[]);
 
 int main(int argc, const char *argv[]) {
     typedef int (*mandelbrotFunc_t)(const mdContext_t md);
-    const char *testsInfoFilename = "tests.md";
+    const char *testsInfoFilename = "test_results.md";
     const int WIDTH  = 1920;
     const int HEIGHT = 1080;
     const mandelbrotFunc_t mandelbrotRenderer = calculateMandelbrotThreaded;

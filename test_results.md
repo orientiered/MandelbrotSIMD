@@ -992,3 +992,846 @@ COMPILE FLAGS: -O3 -DNDEBUG -std=c++17 -fopt-info-vec -march=native -I./include
  + Milliseconds per frame: $14.490 \pm 0.006$
  + Best  frame: 14.43 ms
  + Worst frame: 16.37 ms
+
+# Test session
+## General information:
+```
+RESOLUTION: 1920x1080
+MAX_ITERS: 256
+PLANE_WIDTH: 3.50000
+CENTER: -0.500, 0.000
+MM_SIZE: 512
+MM_PACKS: 5
+Auto vectorization size: 64
+FLOAT TYPE: float
+COMPILER: g++
+COMPILE FLAGS: -O3 -DNDEBUG -std=c++17 -fopt-info-vec -march=native -I./include
+```
+
+
+## No optimizations
+ + Number of tests: 20
+ + FPS: 3.89
+ + Milliseconds per frame: $256.990 \pm 0.599$
+ + Best  frame: 255.17 ms
+ + Worst frame: 267.32 ms
+
+
+## Intrinsic optimizations
+ + Number of tests: 350
+ + FPS: 69.96
+ + Milliseconds per frame: $14.293 \pm 0.015$
+ + Best  frame: 14.07 ms
+ + Worst frame: 17.52 ms
+
+
+## Automatic vectorization by compiler
+ + Number of tests: 323
+ + FPS: 64.50
+ + Milliseconds per frame: $15.503 \pm 0.011$
+ + Best  frame: 15.29 ms
+ + Worst frame: 17.25 ms
+
+# Test session
+## General information:
+```
+RESOLUTION: 1920x1080
+MAX_ITERS: 256
+PLANE_WIDTH: 3.50000
+CENTER: -0.500, 0.000
+MM_SIZE: 512
+MM_PACKS: 5
+Auto vectorization size: 64
+FLOAT TYPE: double
+COMPILER: g++
+COMPILE FLAGS: -O3 -DNDEBUG -std=c++17 -fopt-info-vec -march=native -I./include
+```
+
+
+## No optimizations
+ + Number of tests: 18
+ + FPS: 3.40
+ + Milliseconds per frame: $293.705 \pm 1.295$
+ + Best  frame: 283.15 ms
+ + Worst frame: 299.20 ms
+
+
+## Intrinsic optimizations
+ + Number of tests: 168
+ + FPS: 33.46
+ + Milliseconds per frame: $29.883 \pm 0.023$
+ + Best  frame: 29.48 ms
+ + Worst frame: 31.62 ms
+
+
+## Automatic vectorization by compiler
+ + Number of tests: 131
+ + FPS: 26.07
+ + Milliseconds per frame: $38.362 \pm 0.419$
+ + Best  frame: 36.03 ms
+ + Worst frame: 57.27 ms
+
+# Test session
+## General information:
+```
+RESOLUTION: 1920x1080
+MAX_ITERS: 256
+PLANE_WIDTH: 3.50000
+CENTER: -0.500, 0.000
+MM_SIZE: 512
+MM_PACKS: 5
+Auto vectorization size: 64
+FLOAT TYPE: float
+COMPILER: g++
+COMPILE FLAGS: -O3 -DNDEBUG -std=c++17 -fopt-info-vec -march=native -I./include
+```
+
+
+## No optimizations
+ + Number of tests: 18
+ + FPS: 3.51
+ + Milliseconds per frame: $284.863 \pm 1.029$
+ + Best  frame: 280.71 ms
+ + Worst frame: 300.42 ms
+
+
+## Intrinsic optimizations
+ + Number of tests: 313
+ + FPS: 62.52
+ + Milliseconds per frame: $15.995 \pm 0.013$
+ + Best  frame: 15.63 ms
+ + Worst frame: 17.95 ms
+
+
+## Automatic vectorization by compiler
+ + Number of tests: 287
+ + FPS: 57.36
+ + Milliseconds per frame: $17.435 \pm 0.025$
+ + Best  frame: 17.03 ms
+ + Worst frame: 20.51 ms
+
+
+## Intrinsics on 8 threads
+ + Number of tests: 1846
+ + FPS: 369.14
+ + Milliseconds per frame: $2.709 \pm 0.001$
+ + Best  frame: 2.32 ms
+ + Worst frame: 4.07 ms
+
+# Test session
+## General information:
+```
+RESOLUTION: 1920x1080
+MAX_ITERS: 256
+PLANE_WIDTH: 3.50000
+CENTER: -0.500, 0.000
+MM_SIZE: 512
+MM_PACKS: 5
+Auto vectorization size: 64
+FLOAT TYPE: float
+COMPILER: g++
+COMPILE FLAGS: -O3 -DNDEBUG -std=c++17 -fopt-info-vec -march=native -I./include
+```
+
+
+## No optimizations
+ + Number of tests: 118
+ + FPS: 3.91
+ + Milliseconds per frame: $255.680 \pm 0.254$
+ + Best  frame: 250.13 ms
+ + Worst frame: 268.96 ms
+
+
+## Intrinsic optimizations
+ + Number of tests: 2102
+ + FPS: 70.07
+ + Milliseconds per frame: $14.272 \pm 0.008$
+ + Best  frame: 13.86 ms
+ + Worst frame: 17.76 ms
+
+
+## Automatic vectorization by compiler
+ + Number of tests: 1922
+ + FPS: 64.05
+ + Milliseconds per frame: $15.613 \pm 0.008$
+ + Best  frame: 15.27 ms
+ + Worst frame: 20.05 ms
+
+
+## Intrinsics on 8 threads
+ + Number of tests: 13783
+ + FPS: 459.56
+ + Milliseconds per frame: $2.176 \pm 0.001$
+ + Best  frame: 1.83 ms
+ + Worst frame: 7.36 ms
+
+# Test session
+## General information:
+```
+RESOLUTION: 1920x1080
+MAX_ITERS: 256
+PLANE_WIDTH: 3.50000
+CENTER: -0.500, 0.000
+MM_SIZE: 512
+MM_PACKS: 5
+Auto vectorization size: 64
+FLOAT TYPE: float
+COMPILER: g++
+COMPILE FLAGS: -O3 -DNDEBUG -std=c++17 -fopt-info-vec -march=native -I./include
+```
+
+
+## No optimizations
+ + Number of tests: 36
+ + FPS: 3.58
+ + Milliseconds per frame: $279.084 \pm 12.927$
+ + Best  frame: 257.59 ms
+ + Worst frame: 636.77 ms
+
+
+## Intrinsic optimizations
+ + Number of tests: 656
+ + FPS: 65.51
+ + Milliseconds per frame: $15.264 \pm 0.062$
+ + Best  frame: 14.97 ms
+ + Worst frame: 55.73 ms
+
+
+## Automatic vectorization by compiler
+ + Number of tests: 599
+ + FPS: 59.87
+ + Milliseconds per frame: $16.702 \pm 0.010$
+ + Best  frame: 16.53 ms
+ + Worst frame: 19.19 ms
+
+
+## Intrinsics on 16 threads
+ + Number of tests: 4992
+ + FPS: 499.25
+ + Milliseconds per frame: $2.003 \pm 0.003$
+ + Best  frame: 1.71 ms
+ + Worst frame: 9.70 ms
+
+# Test session
+## General information:
+```
+RESOLUTION: 1920x1080
+MAX_ITERS: 256
+PLANE_WIDTH: 3.50000
+CENTER: -0.500, 0.000
+MM_SIZE: 512
+MM_PACKS: 5
+Auto vectorization size: 64
+Number of threads: 4
+FLOAT TYPE: float
+COMPILER: g++
+COMPILE FLAGS: -O3 -DNDEBUG -std=c++17 -fopt-info-vec -march=native -I./include
+```
+
+
+## No optimizations
+ + Number of tests: 38
+ + FPS: 3.76
+ + Milliseconds per frame: $265.931 \pm 11.352$
+ + Best  frame: 247.23 ms
+ + Worst frame: 566.32 ms
+
+
+## Intrinsic optimizations
+ + Number of tests: 750
+ + FPS: 74.92
+ + Milliseconds per frame: $13.348 \pm 0.004$
+ + Best  frame: 13.28 ms
+ + Worst frame: 15.39 ms
+
+
+## Automatic vectorization by compiler
+ + Number of tests: 684
+ + FPS: 68.33
+ + Milliseconds per frame: $14.635 \pm 0.003$
+ + Best  frame: 14.52 ms
+ + Worst frame: 16.64 ms
+
+
+## Intrinsics on 4 threads
+ + Number of tests: 2765
+ + FPS: 276.55
+ + Milliseconds per frame: $3.616 \pm 0.001$
+ + Best  frame: 3.55 ms
+ + Worst frame: 7.09 ms
+
+# Test session
+## General information:
+```
+RESOLUTION: 1920x1080
+MAX_ITERS: 256
+PLANE_WIDTH: 3.50000
+CENTER: -0.500, 0.000
+MM_SIZE: 512
+MM_PACKS: 5
+Auto vectorization size: 64
+Number of threads: 12
+FLOAT TYPE: float
+COMPILER: clang++
+COMPILE FLAGS: -O3 -DNDEBUG -std=c++17  -march=native -I./include
+```
+
+
+## No optimizations
+ + Number of tests: 62
+ + FPS: 4.08
+ + Milliseconds per frame: $245.217 \pm 0.227$
+ + Best  frame: 244.55 ms
+ + Worst frame: 258.24 ms
+
+
+## Intrinsic optimizations
+ + Number of tests: 1058
+ + FPS: 70.52
+ + Milliseconds per frame: $14.181 \pm 0.003$
+ + Best  frame: 14.04 ms
+ + Worst frame: 16.16 ms
+
+
+## Automatic vectorization by compiler
+ + Number of tests: 906
+ + FPS: 60.38
+ + Milliseconds per frame: $16.562 \pm 0.002$
+ + Best  frame: 16.50 ms
+ + Worst frame: 18.55 ms
+
+
+## Intrinsics on 12 threads
+ + Number of tests: 8201
+ + FPS: 546.75
+ + Milliseconds per frame: $1.829 \pm 0.000$
+ + Best  frame: 1.78 ms
+ + Worst frame: 2.72 ms
+
+# Test session
+## General information:
+```
+RESOLUTION: 1920x1080
+MAX_ITERS: 256
+PLANE_WIDTH: 3.50000
+CENTER: -0.500, 0.000
+MM_SIZE: 512
+MM_PACKS: 5
+Auto vectorization size: 64
+Number of threads: 12
+FLOAT TYPE: float
+COMPILER: g++
+COMPILE FLAGS: -O3 -DNDEBUG -std=c++17  -march=native -I./include
+```
+
+
+## No optimizations
+ + Number of tests: 62
+ + FPS: 4.07
+ + Milliseconds per frame: $245.572 \pm 0.293$
+ + Best  frame: 244.09 ms
+ + Worst frame: 257.76 ms
+
+
+## Intrinsic optimizations
+ + Number of tests: 1124
+ + FPS: 74.92
+ + Milliseconds per frame: $13.347 \pm 0.004$
+ + Best  frame: 13.25 ms
+ + Worst frame: 15.70 ms
+
+
+## Automatic vectorization by compiler
+ + Number of tests: 1032
+ + FPS: 68.80
+ + Milliseconds per frame: $14.535 \pm 0.002$
+ + Best  frame: 14.44 ms
+ + Worst frame: 16.29 ms
+
+
+## Intrinsics on 12 threads
+ + Number of tests: 7881
+ + FPS: 525.49
+ + Milliseconds per frame: $1.903 \pm 0.000$
+ + Best  frame: 1.73 ms
+ + Worst frame: 4.51 ms
+
+# Test session
+## General information:
+```
+RESOLUTION: 1920x1080
+MAX_ITERS: 256
+PLANE_WIDTH: 3.50000
+CENTER: -0.500, 0.000
+MM_SIZE: 512
+MM_PACKS: 5
+Auto vectorization size: 64
+Number of threads: 8
+FLOAT TYPE: float
+COMPILER: g++
+COMPILE FLAGS: -O3 -DNDEBUG -std=c++17  -march=native -I./include
+```
+
+
+## No optimizations
+ + Number of tests: 246
+ + FPS: 4.09
+ + Milliseconds per frame: $244.582 \pm 0.061$
+ + Best  frame: 244.12 ms
+ + Worst frame: 257.64 ms
+
+
+## Intrinsic optimizations
+ + Number of tests: 4498
+ + FPS: 74.97
+ + Milliseconds per frame: $13.339 \pm 0.000$
+ + Best  frame: 13.26 ms
+ + Worst frame: 15.34 ms
+
+
+## Automatic vectorization by compiler
+ + Number of tests: 4124
+ + FPS: 68.72
+ + Milliseconds per frame: $14.551 \pm 0.001$
+ + Best  frame: 14.48 ms
+ + Worst frame: 16.71 ms
+
+
+## Intrinsics on 8 threads
+ + Number of tests: 28221
+ + FPS: 470.37
+ + Milliseconds per frame: $2.126 \pm 0.000$
+ + Best  frame: 1.83 ms
+ + Worst frame: 4.63 ms
+
+# Test session
+## General information:
+```
+RESOLUTION: 1920x1080
+MAX_ITERS: 256
+PLANE_WIDTH: 3.50000
+CENTER: -0.500, 0.000
+MM_SIZE: 512
+MM_PACKS: 5
+Auto vectorization size: 64
+Number of threads: 8
+FLOAT TYPE: float
+COMPILER: clang++
+COMPILE FLAGS: -O3 -DNDEBUG -std=c++17  -march=native -I./include
+```
+
+
+## No optimizations
+ + Number of tests: 246
+ + FPS: 4.10
+ + Milliseconds per frame: $244.106 \pm 0.055$
+ + Best  frame: 243.28 ms
+ + Worst frame: 254.53 ms
+
+
+## Intrinsic optimizations
+ + Number of tests: 4230
+ + FPS: 70.50
+ + Milliseconds per frame: $14.185 \pm 0.001$
+ + Best  frame: 14.07 ms
+ + Worst frame: 16.22 ms
+
+
+## Automatic vectorization by compiler
+ + Number of tests: 3622
+ + FPS: 60.36
+ + Milliseconds per frame: $16.567 \pm 0.002$
+ + Best  frame: 16.50 ms
+ + Worst frame: 18.67 ms
+
+
+## Intrinsics on 8 threads
+ + Number of tests: 28075
+ + FPS: 467.95
+ + Milliseconds per frame: $2.137 \pm 0.000$
+ + Best  frame: 1.85 ms
+ + Worst frame: 3.85 ms
+
+# Test session
+## General information:
+```
+RESOLUTION: 2048x1080
+MAX_ITERS: 256
+PLANE_WIDTH: 3.50000
+CENTER: -0.500, 0.000
+MM_SIZE: 512
+MM_PACKS: 4
+Auto vectorization size: 64
+Number of threads: 8
+FLOAT TYPE: float
+COMPILER: g++
+COMPILE FLAGS: -O3 -DNDEBUG -std=c++17  -march=native -I./include
+```
+
+
+## No optimizations
+ + Number of tests: 27
+ + FPS: 3.55
+ + Milliseconds per frame: $281.336 \pm 0.514$
+ + Best  frame: 280.22 ms
+ + Worst frame: 294.44 ms
+
+
+## Intrinsic optimizations
+ + Number of tests: 500
+ + FPS: 66.58
+ + Milliseconds per frame: $15.020 \pm 0.006$
+ + Best  frame: 14.83 ms
+ + Worst frame: 16.91 ms
+
+
+## Automatic vectorization by compiler
+ + Number of tests: 459
+ + FPS: 61.12
+ + Milliseconds per frame: $16.361 \pm 0.007$
+ + Best  frame: 16.28 ms
+ + Worst frame: 18.57 ms
+
+
+## Intrinsics on 8 threads
+ + Number of tests: 3284
+ + FPS: 438.02
+ + Milliseconds per frame: $2.283 \pm 0.001$
+ + Best  frame: 1.98 ms
+ + Worst frame: 5.05 ms
+
+# Test session
+## General information:
+```
+RESOLUTION: 2048x1080
+MAX_ITERS: 256
+PLANE_WIDTH: 3.50000
+CENTER: -0.500, 0.000
+MM_SIZE: 512
+MM_PACKS: 4
+Auto vectorization size: 64
+Number of threads: 8
+FLOAT TYPE: float
+COMPILER: g++
+COMPILE FLAGS: -O3 -DNDEBUG -std=c++17  -march=native -I./include
+```
+
+
+## No optimizations
+ + Number of tests: 27
+ + FPS: 3.55
+ + Milliseconds per frame: $281.335 \pm 0.477$
+ + Best  frame: 280.12 ms
+ + Worst frame: 292.61 ms
+
+
+## Intrinsic optimizations
+ + Number of tests: 501
+ + FPS: 66.71
+ + Milliseconds per frame: $14.990 \pm 0.007$
+ + Best  frame: 14.81 ms
+ + Worst frame: 16.97 ms
+
+
+## Automatic vectorization by compiler
+ + Number of tests: 460
+ + FPS: 61.23
+ + Milliseconds per frame: $16.333 \pm 0.006$
+ + Best  frame: 16.25 ms
+ + Worst frame: 18.35 ms
+
+
+## Intrinsics on 8 threads
+ + Number of tests: 3314
+ + FPS: 441.89
+ + Milliseconds per frame: $2.263 \pm 0.001$
+ + Best  frame: 2.02 ms
+ + Worst frame: 3.04 ms
+
+# Test session
+## General information:
+```
+RESOLUTION: 2048x1080
+MAX_ITERS: 256
+PLANE_WIDTH: 3.50000
+CENTER: -0.500, 0.000
+MM_SIZE: 512
+MM_PACKS: 2
+Auto vectorization size: 64
+Number of threads: 8
+FLOAT TYPE: float
+COMPILER: g++
+COMPILE FLAGS: -O3 -DNDEBUG -std=c++17  -march=native -I./include
+```
+
+
+## No optimizations
+ + Number of tests: 27
+ + FPS: 3.58
+ + Milliseconds per frame: $279.122 \pm 0.475$
+ + Best  frame: 277.07 ms
+ + Worst frame: 288.68 ms
+
+
+## Intrinsic optimizations
+ + Number of tests: 446
+ + FPS: 59.36
+ + Milliseconds per frame: $16.847 \pm 0.010$
+ + Best  frame: 16.58 ms
+ + Worst frame: 19.07 ms
+
+
+## Automatic vectorization by compiler
+ + Number of tests: 459
+ + FPS: 61.12
+ + Milliseconds per frame: $16.362 \pm 0.005$
+ + Best  frame: 16.28 ms
+ + Worst frame: 18.21 ms
+
+
+## Intrinsics on 8 threads
+ + Number of tests: 2940
+ + FPS: 392.00
+ + Milliseconds per frame: $2.551 \pm 0.002$
+ + Best  frame: 2.33 ms
+ + Worst frame: 3.96 ms
+
+# Test session
+## General information:
+```
+RESOLUTION: 1920x1080
+MAX_ITERS: 256
+PLANE_WIDTH: 3.50000
+CENTER: -0.500, 0.000
+MM_SIZE: 512
+MM_PACKS: 1
+Auto vectorization size: 64
+Number of threads: 8
+FLOAT TYPE: float
+COMPILER: g++
+COMPILE FLAGS: -O3 -DNDEBUG -std=c++17  -march=native -I./include
+```
+
+
+## No optimizations
+ + Number of tests: 31
+ + FPS: 4.06
+ + Milliseconds per frame: $246.042 \pm 0.523$
+ + Best  frame: 244.48 ms
+ + Worst frame: 259.08 ms
+
+
+## Intrinsic optimizations
+ + Number of tests: 364
+ + FPS: 48.49
+ + Milliseconds per frame: $20.622 \pm 0.012$
+ + Best  frame: 20.52 ms
+ + Worst frame: 23.37 ms
+
+
+## Automatic vectorization by compiler
+ + Number of tests: 509
+ + FPS: 67.83
+ + Milliseconds per frame: $14.742 \pm 0.013$
+ + Best  frame: 14.50 ms
+ + Worst frame: 16.95 ms
+
+
+## Intrinsics on 8 threads
+ + Number of tests: 2343
+ + FPS: 312.40
+ + Milliseconds per frame: $3.201 \pm 0.003$
+ + Best  frame: 2.96 ms
+ + Worst frame: 4.93 ms
+
+# Test session
+## General information:
+```
+RESOLUTION: 1920x1080
+MAX_ITERS: 256
+PLANE_WIDTH: 3.50000
+CENTER: -0.500, 0.000
+MM_SIZE: 256
+MM_PACKS: 1
+Auto vectorization size: 64
+Number of threads: 8
+FLOAT TYPE: float
+COMPILER: g++
+COMPILE FLAGS: -O3 -DNDEBUG -std=c++17  -march=native -I./include
+```
+
+
+## No optimizations
+ + Number of tests: 31
+ + FPS: 4.07
+ + Milliseconds per frame: $245.400 \pm 0.453$
+ + Best  frame: 244.21 ms
+ + Worst frame: 257.05 ms
+
+
+## Intrinsic optimizations
+ + Number of tests: 221
+ + FPS: 29.42
+ + Milliseconds per frame: $33.987 \pm 0.017$
+ + Best  frame: 33.87 ms
+ + Worst frame: 36.48 ms
+
+
+## Automatic vectorization by compiler
+ + Number of tests: 517
+ + FPS: 68.82
+ + Milliseconds per frame: $14.531 \pm 0.005$
+ + Best  frame: 14.45 ms
+ + Worst frame: 16.47 ms
+
+
+## Intrinsics on 8 threads
+ + Number of tests: 1614
+ + FPS: 215.24
+ + Milliseconds per frame: $4.646 \pm 0.002$
+ + Best  frame: 4.41 ms
+ + Worst frame: 6.37 ms
+
+# Test session
+## General information:
+```
+RESOLUTION: 1920x1080
+MAX_ITERS: 256
+PLANE_WIDTH: 3.50000
+CENTER: -0.500, 0.000
+MM_SIZE: 256
+MM_PACKS: 2
+Auto vectorization size: 64
+Number of threads: 8
+FLOAT TYPE: float
+COMPILER: g++
+COMPILE FLAGS: -O3 -DNDEBUG -std=c++17  -march=native -I./include
+```
+
+
+## No optimizations
+ + Number of tests: 31
+ + FPS: 4.07
+ + Milliseconds per frame: $245.782 \pm 0.446$
+ + Best  frame: 244.35 ms
+ + Worst frame: 256.05 ms
+
+
+## Intrinsic optimizations
+ + Number of tests: 349
+ + FPS: 46.40
+ + Milliseconds per frame: $21.550 \pm 0.009$
+ + Best  frame: 21.43 ms
+ + Worst frame: 23.59 ms
+
+
+## Automatic vectorization by compiler
+ + Number of tests: 512
+ + FPS: 68.24
+ + Milliseconds per frame: $14.654 \pm 0.004$
+ + Best  frame: 14.59 ms
+ + Worst frame: 16.41 ms
+
+
+## Intrinsics on 8 threads
+ + Number of tests: 2449
+ + FPS: 326.58
+ + Milliseconds per frame: $3.062 \pm 0.002$
+ + Best  frame: 2.95 ms
+ + Worst frame: 4.60 ms
+
+# Test session
+## General information:
+```
+RESOLUTION: 1920x1080
+MAX_ITERS: 256
+PLANE_WIDTH: 3.50000
+CENTER: -0.500, 0.000
+MM_SIZE: 256
+MM_PACKS: 3
+Auto vectorization size: 64
+Number of threads: 8
+FLOAT TYPE: float
+COMPILER: g++
+COMPILE FLAGS: -O3 -DNDEBUG -std=c++17  -march=native -I./include
+```
+
+
+## No optimizations
+ + Number of tests: 31
+ + FPS: 4.02
+ + Milliseconds per frame: $248.869 \pm 0.459$
+ + Best  frame: 247.33 ms
+ + Worst frame: 259.54 ms
+
+
+## Intrinsic optimizations
+ + Number of tests: 415
+ + FPS: 55.22
+ + Milliseconds per frame: $18.109 \pm 0.009$
+ + Best  frame: 18.03 ms
+ + Worst frame: 20.17 ms
+
+
+## Automatic vectorization by compiler
+ + Number of tests: 518
+ + FPS: 68.96
+ + Milliseconds per frame: $14.501 \pm 0.004$
+ + Best  frame: 14.44 ms
+ + Worst frame: 16.28 ms
+
+
+## Intrinsics on 8 threads
+ + Number of tests: 2812
+ + FPS: 374.95
+ + Milliseconds per frame: $2.667 \pm 0.001$
+ + Best  frame: 2.49 ms
+ + Worst frame: 3.37 ms
+
+# Test session
+## General information:
+```
+RESOLUTION: 2048x1080
+MAX_ITERS: 256
+PLANE_WIDTH: 3.50000
+CENTER: -0.500, 0.000
+MM_SIZE: 256
+MM_PACKS: 4
+Auto vectorization size: 64
+Number of threads: 8
+FLOAT TYPE: float
+COMPILER: g++
+COMPILE FLAGS: -O3 -DNDEBUG -std=c++17  -march=native -I./include
+```
+
+
+## No optimizations
+ + Number of tests: 27
+ + FPS: 3.55
+ + Milliseconds per frame: $281.761 \pm 0.441$
+ + Best  frame: 280.30 ms
+ + Worst frame: 290.67 ms
+
+
+## Intrinsic optimizations
+ + Number of tests: 396
+ + FPS: 52.70
+ + Milliseconds per frame: $18.976 \pm 0.008$
+ + Best  frame: 18.91 ms
+ + Worst frame: 21.17 ms
+
+
+## Automatic vectorization by compiler
+ + Number of tests: 460
+ + FPS: 61.21
+ + Milliseconds per frame: $16.337 \pm 0.007$
+ + Best  frame: 16.25 ms
+ + Worst frame: 18.36 ms
+
+
+## Intrinsics on 8 threads
+ + Number of tests: 2572
+ + FPS: 342.94
+ + Milliseconds per frame: $2.916 \pm 0.002$
+ + Best  frame: 2.74 ms
+ + Worst frame: 5.22 ms
