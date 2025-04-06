@@ -3,55 +3,56 @@
 ## Compiling
 
 + Tune parameters in [mandelbrot.h](include/mandelbrot.h)
-    1. Select type of floating point number to use in calculations
 
-        Uncomment line with type you want: float or double, and comment other line
+    **1. Select type of floating point number to use in calculations**
 
-        ```c
-        #define MANDELBROT_FLOAT
-        // #define MANDELBROT_DOUBLE
-        ```
+    Uncomment line with type you want: float or double, and comment other line
 
-    2. Choose size of MM register
+    ```c
+    #define MANDELBROT_FLOAT
+    // #define MANDELBROT_DOUBLE
+    ```
 
-        ```c
-        #define MM_SIZE 256    // size of current mm register
-        ```
+    **2. Choose size of MM register**
 
-        + `128` - `xmm` registers provided with `SSE` instruction set. Almost all modern CPUs have that instruction set.
-        + `256` - `ymm` registers --> `AVX/AVX2` instruction set. Again, chances high your processor supports it.
-        + `512` - `zmm` registers --> `AVX512` instruction set. Check your processor specs (CPUID) for `AVX512` flags. Only high-end CPUs (often with iGPU) support it.
+    ```c
+    #define MM_SIZE 256    // size of current mm register
+    ```
 
-        Generally, higher = better, but you are free to try and find best option
+    + `128` - `xmm` registers provided with `SSE` instruction set. Almost all modern CPUs have that instruction set.
+    + `256` - `ymm` registers --> `AVX/AVX2` instruction set. Again, chances high your processor supports it.
+    + `512` - `zmm` registers --> `AVX512` instruction set. Check your processor specs (CPUID) for `AVX512` flags. Only high-end CPUs (often with iGPU) support it.
 
-    3. Choose number of packs with floats in mm registers to use in one iteration
+    Generally, higher = better, but you are free to try and find best option
 
-        ```c
-        #define MM_PACKS 2
-        ```
+    **3. Choose number of packs with floats in mm registers to use in one iteration**
 
-        Doing more commands without jumps helps CPU to conveyorize intsructions and perform much faster. On AVX512 optimal number seems to be 5.
+    ```c
+    #define MM_PACKS 2
+    ```
 
-    4. Modern compilers are smart enough to convert loops into vector instructions. This parameter controls number of points processed simultaneously.
+    Doing more commands without jumps helps CPU to conveyorize intsructions and perform much faster. On AVX512 optimal number seems to be 5.
 
-        ```c
-        #define AUTO_VEC_PACK_SIZE 32
-        ```
+    **4. Modern compilers are smart enough to convert loops into vector instructions. This parameter controls number of points processed simultaneously.**
 
-        Use __multiples__ of powers of 2 (4, 8, 16, ...)  
+    ```c
+    #define AUTO_VEC_PACK_SIZE 32
+    ```
 
-        Best results are often get when `AUTO_VEC_PACK_SIZE` is x2 or x4 of floats you can put in one MM register.
+    Use __multiples__ of powers of 2 (4, 8, 16, ...)  
 
-        + For example: `AVX2` -> `256 bits` + `float (32bits)` -> `8` floats in `ymm` ---> `AUTO_VEC_PACK_SIZE = 32`
-    5. Choose number of threads
+    Best results are often get when `AUTO_VEC_PACK_SIZE` is x2 or x4 of floats you can put in one MM register.
 
-        ```c
-        const int THREAD_POOL_SIZE = 4;
-        ```
+    + For example: `AVX2` -> `256 bits` + `float (32bits)` -> `8` floats in `ymm` ---> `AUTO_VEC_PACK_SIZE = 32`
+    **5. Choose number of threads**
 
-        Mandelbrot set will be rendered in parallel.
+    ```c
+    const int THREAD_POOL_SIZE = 4;
+    ```
 
-+ Choose screen resolution and render function in [main.cpp](src/main.cpp)
+    Mandelbrot set will be rendered in parallel.
+
++ **Choose screen resolution and render function in [main.cpp](src/main.cpp)**
 
     ```c
     const int WIDTH  = 1920;    // in pixels
@@ -59,9 +60,9 @@
     const mandelbrotFunc_t mandelbrotRenderer = calculateMandelbrotOptimized;
     ```
 
-    Note: WIDTH must be divisible by `AUTO_VEC_PACK_SIZE` and `MM_SIZE`/8. Otherwise program will change resolution to compatible in runtime.
+    **Note:** `WIDTH` must be divisible by `AUTO_VEC_PACK_SIZE` and `MM_SIZE`/8. Otherwise program will change resolution to compatible in runtime.
 
-    Available render functions:
+    **Available render functions:**
   + `calculateMandelbrot` - no optimizations
   + `calculateMandelbrotOptimized` - manual optimization with SIMD intrinsics
   + `calculateMandelbrotAutoVec` - version optimized by compiler

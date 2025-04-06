@@ -160,6 +160,8 @@ int calculateMandelbrot(const mdContext_t md) {
         #define _MM_SUB(a, b) _mm_sub_ps(a, b)
         #define _MM_MUL(a, b) _mm_mul_ps(a, b)
 
+        #define _MM_MOVEMASK(a) _mm_movemask_ps( (MM_t) a)
+
         #define _MM_CMPLE_TO_EPI(a, b) (MMi_t) _mm_cmple_ps(a, b)
     #else
         typedef __m128d  MM_t;
@@ -173,6 +175,9 @@ int calculateMandelbrot(const mdContext_t md) {
 
         #define _MM_SUB(a, b) _mm_sub_pd(a, b)
         #define _MM_MUL(a, b) _mm_mul_pd(a, b)
+
+
+        #define _MM_MOVEMASK(a) _mm_movemask_pd( (MM_t) a)
 
         #define _MM_CMPLE_TO_EPI(a, b) (MMi_t) _mm_cmple_pd(a, b)
 
@@ -204,6 +209,8 @@ int calculateMandelbrot(const mdContext_t md) {
         #define _MM_SUB(a, b) _mm256_sub_ps(a, b)
         #define _MM_MUL(a, b) _mm256_mul_ps(a, b)
 
+        #define _MM_MOVEMASK(a) _mm256_movemask_ps((MM_t) a)
+
         #define _MM_CMPLE_TO_EPI(a, b) _mm256_castps_si256( _mm256_cmp_ps(a, b, _CMP_LE_OS))
     #else
         typedef __m256d  MM_t;
@@ -217,6 +224,8 @@ int calculateMandelbrot(const mdContext_t md) {
         #define _MM_ADD_EPI(a, b) _mm256_add_epi64(a, b)
         #define _MM_SUB(a, b) _mm256_sub_pd(a, b)
         #define _MM_MUL(a, b) _mm256_mul_pd(a, b)
+
+        #define _MM_MOVEMASK(a) _mm256_movemask_pd( (MM_t) a)
 
         #define _MM_CMPLE_TO_EPI(a, b) (MMi_t) _mm256_cmp_pd(a, b, _CMP_LE_OS)
 
@@ -365,10 +374,10 @@ static int calculateMandelbrotOptimized_base(const mdContext_t md, const int sta
                 MMi_t cmp[MM_PACKS];
                 INTRIN_LOOP(i) cmp[i] = _MM_CMPLE_TO_EPI(r2[i], escapeR2);
                 // If cmp == 0 => all points escaped => break
-                bool allEscaped = true;
-                INTRIN_LOOP(i) allEscaped &= _MM_TESTZ(cmp[i], cmp[i]) ;
+                bool notAllEscaped = false;
+                INTRIN_LOOP(i) notAllEscaped |= _MM_MOVEMASK(cmp[i]) ;
 
-                if (allEscaped) break;
+                if (!notAllEscaped) break;
 
                 // Converting mask to integer 1 or 0
                 // logicMask = low bit for every float in MM_t
