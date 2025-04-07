@@ -13,11 +13,11 @@
 
 /// @brief Number of packs of md_float that are processed in one iteration
 /// Improves conveyorization by reducing data dependency
-#define MM_PACKS 5
+#define MM_PACKS 6
 
 //! CRUCIAL PARAMETER
 //! Size of vector register in bits
-#define MM_SIZE 512    // size of current mm register
+#define MM_SIZE 256    // size of current mm register
 //! xmm -- 128 (SSE4.2)
 //! ymm -- 256 (AVX2)
 //! zmm -- 512 (AVX512)
@@ -25,10 +25,10 @@
 
 /// @brief Number of md_floats that will be processed simultaneously
 /// @brief Used only in version that is vectorized automatically
-#define AUTO_VEC_PACK_SIZE 64
+#define AUTO_VEC_PACK_SIZE 16
 
 /// @brief Number of threads for rendering
-const int THREAD_POOL_SIZE = 4;
+const int THREAD_POOL_SIZE = 8;
 
 /*============================== FLOAT TYPE =============================================*/
 
