@@ -87,6 +87,9 @@ int main(int argc, const char *argv[]) {
         total_rendered++;
         totalDrawTime   += t3 - t2;
         totalRenderTime += t2 - t1;
+
+        fpsMeterPushFrameTime(&context.fps, t3-t1);
+
         fprintf(stderr, "\r%u; render: %d draw: %d" , total_rendered, (t2-t1).asMilliseconds(), (t3-t2).asMilliseconds());
 
     }

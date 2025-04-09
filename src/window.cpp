@@ -1,4 +1,5 @@
 #include <SFML/Graphics.hpp>
+#include <SFML/System/Time.hpp>
 #include <SFML/Window/Event.hpp>
 #include <SFML/Window/Keyboard.hpp>
 #include <SFML/Window/Clipboard.hpp>
@@ -10,6 +11,8 @@ int windowCtor(windowContext_t *context, const int WIDTH, const int HEIGHT, cons
     context->window.create(sf::VideoMode(WIDTH, HEIGHT), title);
     context->mdTexture.create(WIDTH, HEIGHT);
     context->mdSprite.setTexture(context->mdTexture, true);
+
+    fpsMeterCtor(&context->fps, sf::Vector2f(0,0), FONT_FILENAME);
 
     context->mousePressed = false;
     return 0;
@@ -153,10 +156,52 @@ int windowHandleEvents(windowContext_t *context, mdContext_t *md) {
 
 
 int windowDraw(windowContext_t *context, const mdContext_t md) {
+
     context->mdTexture.update((sf::Uint8 *)md.screen);
     context->window.clear();
     context->window.draw(context->mdSprite);
+
+    fpsMeterDraw(&context->fps, &context->window);
+
     context->window.display();
 
+    return 0;
+}
+
+
+int fpsMeterCtor(FPSmeter_t *fps, const sf::Vector2f pos, const char *fontPath) {
+    fps->font.loadFromFile(FONT_FILENAME);
+    fps->FPS.setFont(fps->font);
+    fps->FPS.setPosition(pos);
+    
+    for (int i = 0; i < FRAME_AVERAGING_COUNT; i++)
+        fps->frameTimes[i] = sf::seconds(1);
+
+    return 0;
+}
+
+int fpsMeterDraw(FPSmeter_t *fps, sf::RenderWindow* window) {
+    float averageTime = 0;
+    for (int i = 0; i < FRAME_AVERAGING_COUNT; i++)
+        averageTime += fps->frameTimes[i].asSeconds();
+
+    averageTime /= FRAME_AVERAGING_COUNT;
+
+    const int FPS_STRING_LENGTH = 15;
+    char fpsString[FPS_STRING_LENGTH] = ""; 
+    sprintf(fpsString, "FPS:%.2f", 1.f/averageTime);
+
+    fps->FPS.setString(fpsString);
+
+    window->draw(fps->FPS);
+    return 0;
+}
+
+int fpsMeterPushFrameTime(FPSmeter_t *fps, const sf::Time lastFrameTime) {
+    for (int i = 1; i < FRAME_AVERAGING_COUNT; i++)
+        fps->frameTimes[i-1] = fps->frameTimes[i];
+
+    fps->frameTimes[FRAME_AVERAGING_COUNT-1] = lastFrameTime;
+    
     return 0;
 }

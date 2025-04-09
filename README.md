@@ -48,6 +48,7 @@ Mandelbrot set explorer with intuitive controls and stunning optimizations!
     Best results are often get when `AUTO_VEC_PACK_SIZE` is x2 or x4 of floats you can put in one MM register.
 
     + For example: `AVX2` -> `256 bits` + `float (32bits)` -> `8` floats in `ymm` ---> `AUTO_VEC_PACK_SIZE = 32`
+
     **5. Choose number of threads**
 
     ```c
