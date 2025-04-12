@@ -69,7 +69,25 @@ int mdContextDtor(mdContext_t *context) {
     return 0;
 }
 
+int mdContextResize(mdContext_t *md, int WIDTH, int HEIGHT) {
+    if (WIDTH < 0) {
+        printf("Width can only be positive. Fixed it for you: %d -> %d\n", WIDTH, -WIDTH);
+        WIDTH = -WIDTH;
+    }
 
+    if (WIDTH < 0) {
+        printf("Height can only be positive. Fixed it for you: %d -> %d\n", HEIGHT, -HEIGHT);
+        HEIGHT = -HEIGHT;
+    }
+
+    md->screen  = (uint32_t *) realloc(md->screen,  WIDTH*HEIGHT * sizeof(uint32_t));
+    md->escapeN = (uint32_t *) realloc(md->escapeN, WIDTH*HEIGHT * sizeof(uint32_t));
+
+    md->WIDTH  = WIDTH;
+    md->HEIGHT = HEIGHT;
+
+    return 0;
+}
 
 int calculateMandelbrot(const mdContext_t md) {
     /*Unpacking values from mdContext_t for convinience */
@@ -125,7 +143,7 @@ int calculateMandelbrot(const mdContext_t md) {
     typedef __m128i MMi_t;
 
     #define _MM_LOAD_SI(ptr) _mm_load_si128((const MMi_t *) ptr)
-    #define _MM_STORE_SI(ptr, a) _mm_store_si128(ptr, a)
+    #define _MM_STORE_SI(ptr, a) _mm_storeu_si128(ptr, a)
     #define _MM_AND_EPI(a, b) _mm_and_si128(a, b)
     #define _MM_TESTZ(a, b) _mm_testz_si128(a, b)
 
@@ -203,7 +221,7 @@ int calculateMandelbrot(const mdContext_t md) {
 
         #define _MM_SET1(val) _mm256_set1_pd(val)
         #define _MM_STORE_HALF(ptr, a) \
-            _mm_store_si128( (__m128i *)ptr, _mm256_extracti128_si256(a, 0))
+            _mm_storeu_si128( (__m128i *)ptr, _mm256_extracti128_si256(a, 0))
 
         #define _MM_ADD(a, b) _mm256_add_pd(a, b)
         #define _MM_ADD_EPI(a, b) _mm256_add_epi64(a, b)
@@ -251,7 +269,7 @@ int calculateMandelbrot(const mdContext_t md) {
 
         #define _MM_SET1(val) _mm512_set1_pd(val)
         #define _MM_STORE_HALF(ptr, a) \
-            _mm256_store_si256((MMi_t *) ptr, _mm512_extracti32x8_epi32(a, 0))
+            _mm256_storeu_si256((MMi_t *) ptr, _mm512_extracti32x8_epi32(a, 0))
 
         #define _MM_ADD(a, b) _mm512_add_pd(a, b)
         #define _MM_ADD_EPI(a, b) _mm512_add_epi64(a, b)
@@ -265,7 +283,7 @@ int calculateMandelbrot(const mdContext_t md) {
             _mm512_mask_add_epi64(a, mask, a, b)
 
         #define _MM_CVTEPI64_EPI32_STORE(ptr, a) \
-            _mm256_store_si256((__m256i *)ptr, _mm512_cvtepi64_epi32(a))
+            _mm256_storeu_si256((__m256i *)ptr, _mm512_cvtepi64_epi32(a))
     #endif
 
 #else
@@ -433,9 +451,9 @@ int calculateMandelbrotOptimized(const mdContext_t md) {
     return calculateMandelbrotOptimized_base(md, 0, md.HEIGHT);
 }
 
-int calculateMandelbrotThread(const mdContext_t *md, int *shared_startY, std::mutex *mtx_startY, enum mdThreadStatus *status) {
+static int calculateMandelbrotThread(mdContext_t *md, int *shared_startY, std::mutex *mtx_startY, enum mdThreadStatus *status) {
 
-    const int MD_LINES_PER_FETCH = 4;
+    const int MD_LINES_PER_FETCH = 8;
 
     int startY = 0;
     while (true) {
@@ -465,15 +483,19 @@ int calculateMandelbrotThread(const mdContext_t *md, int *shared_startY, std::mu
             continue;
         }
 
+        int linesToCalc = (md->HEIGHT - startY >= MD_LINES_PER_FETCH) ?
+                           MD_LINES_PER_FETCH:
+                           md->HEIGHT - startY;
+
         // fprintf(stderr, "Took %d line to calc (next = %d)\n", startY, startY + MD_LINES_PER_FETCH);
         *status = MD_THREAD_WORKING;
-        calculateMandelbrotOptimized_base(*md, startY, MD_LINES_PER_FETCH);
+        calculateMandelbrotOptimized_base(*md, startY, linesToCalc);
     }
     return 0;
 
 }
 
-int mdThreadPoolCtor(threadPool_t *pool, const mdContext_t *md) {
+int mdThreadPoolCtor(threadPool_t *pool, mdContext_t *md) {
     // Threads are sleeping after init
     pool->currentAvailableLine = md->HEIGHT;
 

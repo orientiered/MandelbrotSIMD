@@ -4,6 +4,9 @@
 #include "mandelbrot.h"
 #include "window.h"
 
+static int windowHandleResize(windowContext_t *context, mdContext_t *md, const sf::Event::SizeEvent newSize);
+static int windowHandleKeypress(windowContext_t *context, mdContext_t *md, const sf::Event::KeyEvent key);
+
 int windowCtor(windowContext_t *context, const int WIDTH, const int HEIGHT, const char *title) {
     context->window.create(sf::VideoMode(WIDTH, HEIGHT), title);
     context->mdTexture.create(WIDTH, HEIGHT);
@@ -15,7 +18,9 @@ int windowCtor(windowContext_t *context, const int WIDTH, const int HEIGHT, cons
     return 0;
 }
 
-int windowHandleKeypress(windowContext_t *context, mdContext_t *md, const sf::Event::KeyEvent key) {
+
+
+static int windowHandleKeypress(windowContext_t *context, mdContext_t *md, const sf::Event::KeyEvent key) {
     double centerMove = md->WIDTH * MD_MOVE_FACTOR * md->scale;
     if (key.shift) centerMove *= MD_SHIFT_MOVE_FACTOR;
 
@@ -64,10 +69,10 @@ int windowHandleKeypress(windowContext_t *context, mdContext_t *md, const sf::Ev
         case sf::Keyboard::C:
         {
         // Ctrl + C copies current position and scale to the clipboard
-            const int MD_POS_SCALE_ACCURACY = 15;
+            const int MD_POS_SCALE_ACCURACY = 5;
             if (key.control) {
-                char pos[MD_POS_SCALE_ACCURACY*4] = "";
-                sprintf(pos, "%.*f %.*f %.*f",  MD_POS_SCALE_ACCURACY, md->centerX,
+                char pos[256] = "";
+                sprintf(pos, "%.*g %.*g %.*g",  MD_POS_SCALE_ACCURACY, md->centerX,
                                                 MD_POS_SCALE_ACCURACY, md->centerY,
                                                 MD_POS_SCALE_ACCURACY, md->scale);
                 sf::Clipboard::setString(pos);
@@ -107,6 +112,11 @@ int windowHandleEvents(windowContext_t *context, mdContext_t *md) {
         switch(event.type) {
             case sf::Event::Closed:
                 context->window.close();
+                break;
+
+
+            case sf::Event::Resized:
+                windowHandleResize(context, md, event.size);
                 break;
 
             case sf::Event::MouseButtonPressed:
@@ -151,6 +161,24 @@ int windowHandleEvents(windowContext_t *context, mdContext_t *md) {
     return 0;
 }
 
+static int windowHandleResize(windowContext_t *context, mdContext_t *md, const sf::Event::SizeEvent newSize) {
+    fprintf(stderr, "Resize: %d %d\n", newSize.width, newSize.height);
+
+    mdContextResize(md, newSize.width, newSize.height);
+
+    context->mdTexture.create(newSize.width, newSize.height);
+    context->mdSprite.setTexture(context->mdTexture, true);
+
+
+    // Changing view to correct resolution
+    sf::FloatRect visibleArea({0.f, 0.f}, 
+                              sf::Vector2f(newSize.width, newSize.height));
+
+    context->window.setView(sf::View(visibleArea));
+
+
+    return 0;
+}
 
 int windowDraw(windowContext_t *context, const mdContext_t md) {
 

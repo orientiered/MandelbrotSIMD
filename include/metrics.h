@@ -36,7 +36,7 @@ doublePair_t runningSTD(double value, int getResult);
     @brief Test all mandelbrot functions and save result in file
     Test time for each function is at least duration and minimum of test_count tests are performed 
 */
-int testMandelbrot(FILE *file, const mdContext_t md, const unsigned test_count, const sf::Time duration);
+int testMandelbrot(FILE *file, mdContext_t md, const unsigned test_count, const sf::Time duration);
 
 
 /*!

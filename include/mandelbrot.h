@@ -8,8 +8,8 @@
 /*================================= IMPORTANT CONSTANTS ============================================*/
 
 /// @brief Uncomment type you want to use
-#define MANDELBROT_FLOAT
-// #define MANDELBROT_DOUBLE
+// #define MANDELBROT_FLOAT
+#define MANDELBROT_DOUBLE
 
 /// @brief Number of packs of md_float that are processed in one iteration
 /// Improves conveyorization by reducing data dependency
@@ -28,7 +28,7 @@
 #define AUTO_VEC_PACK_SIZE 32
 
 /// @brief Number of threads for rendering
-const int THREAD_POOL_SIZE = 4;
+const int THREAD_POOL_SIZE = 8;
 
 /*============================== FLOAT TYPE =============================================*/
 
@@ -100,13 +100,17 @@ typedef struct {
 /*================================ FUNCTIONS ============================================*/
 
 /// @brief Create mandelbrot context
-/// Be careful, this function does not check calloc errors and expects WIDTH and HEIGHT to be positive
+/// Be careful, this function does not check calloc errors
 mdContext_t mdContextCtor(int WIDTH, int HEIGHT);
 
 /// @brief Destroy mandelbrot context and free resources
 int mdContextDtor(mdContext_t *context);
 
-int mdThreadPoolCtor(threadPool_t *pool, const mdContext_t *md);
+/// @brief Reconstruct mandelbrot context with new width and height
+int mdContextResize(mdContext_t *md, int WIDTH, int HEIGHT);
+
+
+int mdThreadPoolCtor(threadPool_t *pool, mdContext_t *md);
 
 int mdThreadPoolDtor(threadPool_t *pool);
 

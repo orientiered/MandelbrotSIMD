@@ -120,7 +120,7 @@ int saveMandelbrotTestResult(FILE *file, const testTime_t testResult, const char
     return 0;
 }
 
-int testMandelbrot(FILE *file, const mdContext_t md, const unsigned test_count, const sf::Time duration) {
+int testMandelbrot(FILE *file, mdContext_t md, const unsigned test_count, const sf::Time duration) {
 
     printf("Running unoptimized version...\n");
     testTime_t noOptTime = testMandelbrotFunction(calculateMandelbrot, md, test_count, duration);
