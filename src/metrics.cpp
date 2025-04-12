@@ -3,8 +3,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <mandelbrot.h>
-#include <metrics.h>
+#include "mandelbrot.h"
+#include "metrics.h"
 
 doublePair_t runningSTD(double value, int getResult) {
     //function to calculate standard deviation of some value

@@ -1,11 +1,8 @@
 #include <SFML/Graphics.hpp>
-#include <SFML/System/Time.hpp>
-#include <SFML/Window/Event.hpp>
-#include <SFML/Window/Keyboard.hpp>
-#include <SFML/Window/Clipboard.hpp>
 #include <stdlib.h>
-#include <mandelbrot.h>
-#include <window.h>
+
+#include "mandelbrot.h"
+#include "window.h"
 
 int windowCtor(windowContext_t *context, const int WIDTH, const int HEIGHT, const char *title) {
     context->window.create(sf::VideoMode(WIDTH, HEIGHT), title);

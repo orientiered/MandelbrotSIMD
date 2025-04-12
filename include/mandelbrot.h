@@ -25,10 +25,10 @@
 
 /// @brief Number of md_floats that will be processed simultaneously
 /// @brief Used only in version that is vectorized automatically
-#define AUTO_VEC_PACK_SIZE 16
+#define AUTO_VEC_PACK_SIZE 32
 
 /// @brief Number of threads for rendering
-const int THREAD_POOL_SIZE = 8;
+const int THREAD_POOL_SIZE = 4;
 
 /*============================== FLOAT TYPE =============================================*/
 
@@ -61,9 +61,6 @@ const md_float MD_DEFAULT_PLANE_WIDTH = 3.5;
 
 const md_float MD_ESCAPE_RADIUS = 10.0;
 
-/// @brief Alignment in bytes to ensure correct store instruction
-const int MD_ALIGN = 64;
-
 /*================================= STRUCTS ============================================*/
 
 enum mdThreadStatus {
@@ -76,14 +73,19 @@ typedef struct threadPool_t {
     std::thread thrdPool[THREAD_POOL_SIZE];             ///< Array with threads
     std::mutex mtx;                                     ///< Mutex for safe currentAvailableLine reading and writing
     enum mdThreadStatus thrdStatus[THREAD_POOL_SIZE];   ///< Array with status of each thread
+
     int currentAvailableLine;                           ///< Number of first line available for rendering
+    /*
+    currentAvailableLine < 0              --> threadPool is not initialized (signal for threads to stop)
+    currentAvailableLine in [0; md.WIDTH) --> rendering
+    currentAvailableLine >= md.WIDTH      --> waiting for next frame 
+    */
 } threadPool_t;
 
 /// @brief Context with essential info to calculate mandlebrot set
 typedef struct {
     uint32_t *screen;           ///< Array of rgba pixels
-    uint32_t *UNALIGNED_escapeN; ///< Array with escape iterations for every pixel
-    uint32_t *escapeN;          ///< Aligned by MD_ALIGN bytes version of UNALIGNED_escapeN
+    uint32_t *escapeN;          ///< Array with escape iterations for every pixel
     int WIDTH, HEIGHT;          ///< Width and height of the screen
     md_float centerX, centerY;  ///< Coordinates of center position on complex plane
     md_float scale;             ///< Scale = (unit length) / (pixels per unit length)
@@ -108,7 +110,7 @@ int mdThreadPoolCtor(threadPool_t *pool, const mdContext_t *md);
 
 int mdThreadPoolDtor(threadPool_t *pool);
 
-//// @brief Calculate color for each iteration from 0 to md.maxIter and store them in md.colorsPrecals
+/// @brief Calculate color for each iteration from 0 to md.maxIter and store them in md.colorsPrecals
 /// Run this function when maxIter changes
 int precalculateColors(const mdContext_t md);
 

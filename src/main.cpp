@@ -1,14 +1,12 @@
 #include <SFML/Graphics.hpp>
-#include <SFML/System/Clock.hpp>
-#include <SFML/System/Time.hpp>
+#include <string.h>
 #include <stdio.h>
 
-#include <mandelbrot.h>
+#include "mandelbrot.h"
 
-#include <window.h>
-#include <metrics.h>
+#include "window.h"
+#include "metrics.h"
 
-#include <string.h>
 
 typedef struct {
     bool testMode;

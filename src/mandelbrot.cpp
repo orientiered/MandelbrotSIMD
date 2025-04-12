@@ -5,7 +5,7 @@
 #include <thread>
 #include <mutex>
 
-#include <mandelbrot.h>
+#include "mandelbrot.h"
 
 
 volatile int MANDELBROT_DUMMY_GLOBAL = 0;
@@ -37,8 +37,6 @@ int precalculateColors(const mdContext_t md) {
 }
 
 mdContext_t mdContextCtor(int WIDTH, int HEIGHT) {
-    const int ARRAY_ALIGNMENT = MD_ALIGN / sizeof(uint32_t);
-
     if (WIDTH < 0) {
         printf("Width can only be positive. Fixed it for you: %d -> %d\n", WIDTH, -WIDTH);
         WIDTH = -WIDTH;
@@ -49,28 +47,15 @@ mdContext_t mdContextCtor(int WIDTH, int HEIGHT) {
         HEIGHT = -HEIGHT;
     }
 
-    if ((WIDTH % AUTO_VEC_PACK_SIZE != 0) || WIDTH % ( MM_SIZE * MM_PACKS / sizeof(md_float) ) != 0) {
-        printf("Not compatible width. Searching for nearest appropriate width: %d ->", WIDTH);
-
-        while ((WIDTH % AUTO_VEC_PACK_SIZE != 0) || WIDTH % ( MM_SIZE * MM_PACKS / sizeof(md_float) ) != 0) {
-            WIDTH++;
-        }
-
-        printf(" %d\n", WIDTH);
-    }
-
     mdContext_t context =
     {   .screen  = (uint32_t *) calloc(WIDTH*HEIGHT, sizeof(uint32_t)),
-        .UNALIGNED_escapeN = (uint32_t *) calloc(WIDTH*HEIGHT + ARRAY_ALIGNMENT, sizeof(uint32_t)),
+        .escapeN = (uint32_t *) calloc(WIDTH*HEIGHT, sizeof(uint32_t)),
         .WIDTH   = WIDTH,        .HEIGHT  = HEIGHT,
         .centerX = MD_DEFAULT_X, .centerY = MD_DEFAULT_Y,
         .scale   = MD_DEFAULT_PLANE_WIDTH / WIDTH,
         .maxIter = MD_DEFAULT_MAX_ITER,
         .colorsPrecalc = (uint32_t *) calloc(MD_ITERS_LIMIT, sizeof(uint32_t))
     };
-
-    int addrShift = ((MD_ALIGN - (size_t)context.UNALIGNED_escapeN % MD_ALIGN) % MD_ALIGN) / sizeof(uint32_t);
-    context.escapeN = context.UNALIGNED_escapeN + addrShift;
 
     precalculateColors(context);
 
@@ -79,7 +64,7 @@ mdContext_t mdContextCtor(int WIDTH, int HEIGHT) {
 
 int mdContextDtor(mdContext_t *context) {
     free(context->screen);
-    free(context->UNALIGNED_escapeN);
+    free(context->escapeN);
     free(context->colorsPrecalc);
     return 0;
 }
@@ -112,7 +97,7 @@ int calculateMandelbrot(const mdContext_t md) {
             md_float x = x0, y = y0;
 
             int iter = 0;
-            for (; iter < MD_DEFAULT_MAX_ITER; iter++) {
+            for (; iter < md.maxIter; iter++) {
                 md_float x2   = x * x,
                          y2   = y * y,
                          xy_2 = x * y * 2.0;
@@ -189,7 +174,7 @@ int calculateMandelbrot(const mdContext_t md) {
 #elif MM_SIZE == 256
     typedef __m256i MMi_t;
     #define _MM_LOAD_SI(ptr) _mm256_load_si256((const MMi_t *) ptr)
-    #define _MM_STORE_SI(ptr, a) _mm256_store_si256((MMi_t *)ptr, a)
+    #define _MM_STORE_SI(ptr, a) _mm256_storeu_si256((MMi_t *)ptr, a)
     #define _MM_AND_EPI(a, b) _mm256_and_si256(a, b)
     #define _MM_TESTZ(a, b) _mm256_testz_si256(a, b)
 
@@ -237,7 +222,7 @@ int calculateMandelbrot(const mdContext_t md) {
 #elif MM_SIZE == 512
     typedef __m512i MMi_t;
     #define _MM_LOAD_SI(ptr) _mm512_load_si512((const MMi_t *) ptr)
-    #define _MM_STORE_SI(ptr, a) _mm512_store_si512(ptr, a)
+    #define _MM_STORE_SI(ptr, a) _mm512_storeu_si512(ptr, a)
     #define _MM_AND_EPI(a, b) _mm512_and_si512(a, b)
 
     #define _MM_SETZERO(a) _mm512_xor_si512(a, a)
@@ -291,7 +276,8 @@ int calculateMandelbrot(const mdContext_t md) {
 #define INTRIN_LOOP(i) for (int i = 0; i < MM_PACKS; i++)
 
 static int calculateMandelbrotOptimized_base(const mdContext_t md, const int startY, const int spanY) {
-    /*Unpacking values from mdContext_t for convinience */
+    /*======== Unpacking values from mdContext_t for convinience ==== */
+
     uint32_t *escapeN = md.escapeN;
     const md_float centerX = md.centerX, centerY = md.centerY;
     const md_float scale = md.scale;
@@ -301,6 +287,7 @@ static int calculateMandelbrotOptimized_base(const mdContext_t md, const int sta
     const md_float ESCAPE_RADIUS2 = MD_ESCAPE_RADIUS * MD_ESCAPE_RADIUS;
     const MM_t escapeR2 = _MM_SET1(ESCAPE_RADIUS2);
 
+    /*========= Calculating constants ============================== */
 
     // 0, dx, 2*dx, ..., (PACKED_SIZE-1) * dx
     alignas(64) md_float initDelta__[PACKED_SIZE];
@@ -316,14 +303,23 @@ static int calculateMandelbrotOptimized_base(const mdContext_t md, const int sta
     }
     const MMi_t logicMask = _MM_LOAD_SI(logicMask__);
 
+    // Limit for vectorized calculations
+    const int xLimit = WIDTH - WIDTH % (PACKED_SIZE * MM_PACKS);
+
+    /*========= Processing pixels ================================== */
 
     for (int iy = startY; iy < startY + spanY; iy++) {
         // Setting y0: the same for all x
         // y0 = centerY + (HEIGHT / 2 - iy) * scale
-        MM_t y0;
-        y0 = _MM_SET1(centerY + (HEIGHT / 2 - iy) * scale);
+        const md_float y0_single = centerY + (HEIGHT / 2 - iy) * scale;
 
-        for (int ix = 0; ix < WIDTH; ix+= PACKED_SIZE*MM_PACKS) {
+        MM_t y0 = _MM_SET1(y0_single);
+
+        // Processing row of pixels
+        // 1. Using unrolled SIMD up to xLimit
+        // 2. Computing the rest with naive approach
+
+        for (int ix = 0; ix < xLimit; ix+= PACKED_SIZE*MM_PACKS) {
             // x0[k] = centerX - scale*WIDTH / 2 + ix * scale + initDelta[k]
             MM_t x0[MM_PACKS];
             INTRIN_LOOP(i) x0[i] = _MM_ADD(_MM_SET1(centerX - scale*WIDTH / 2 + (ix + PACKED_SIZE * i) * scale), initDelta);
@@ -385,6 +381,7 @@ static int calculateMandelbrotOptimized_base(const mdContext_t md, const int sta
                 // iter++ for points that have not escaped yet
                 INTRIN_LOOP(i) escapeIter[i] = _MM_ADD_EPI(escapeIter[i], cmp[i]);
             #endif
+
                 MM_t xy_2[MM_PACKS];
                 INTRIN_LOOP(i) xy_2[i] = _MM_MUL(x[i], y[i]);
                 INTRIN_LOOP(i) xy_2[i] = _MM_ADD(xy_2[i], xy_2[i]);
@@ -398,15 +395,36 @@ static int calculateMandelbrotOptimized_base(const mdContext_t md, const int sta
             }
 
 
-        // Writing number of iterations to the memory
-        // !Alignment is controlled by MD_ALIGN. By default 64 bytes for any store instruction
-        // ! ix += PACKED_SIZE doesn't break align
+            // Writing number of iterations to the memory
+            // Because there is restrictions to WIDTH, we can't use aligned store 
         #ifdef MANDELBROT_DOUBLE
             INTRIN_LOOP(i) _MM_CVTEPI64_EPI32_STORE(&escapeN[iy*WIDTH +ix + PACKED_SIZE*i], escapeIter[i]);
         #else
-            INTRIN_LOOP(i) _MM_STORE_SI((MMi_t *)&escapeN[iy*WIDTH +ix + PACKED_SIZE*i], escapeIter[i]);
+            INTRIN_LOOP(i) _MM_STORE_SI( (MMi_t *) &escapeN[iy * WIDTH + ix + PACKED_SIZE * i], escapeIter[i]);
         #endif
         }
+
+        // Rest of the pixels in a row
+        for (int ix = xLimit; ix < WIDTH; ix++) {
+            const md_float x0 = centerX - scale*WIDTH / 2 + ix*scale;
+
+            md_float x = x0, y = y0_single;
+            int iteration = 0;
+            for (; iteration < maxIter; iteration++) {
+                md_float x2   = x * x,
+                            y2   = y * y,
+                            xy_2 = x * y * 2.0;
+
+                    if (x2 + y2 > ESCAPE_RADIUS2)
+                        break;
+
+                    x = x2 - y2 + x0;
+                    y = xy_2    + y0_single;
+            }
+
+            escapeN[iy*WIDTH + ix] = iteration;    
+        }
+
     }
     return 0;
 }
@@ -539,13 +557,20 @@ int calculateMandelbrotAutoVec(const mdContext_t md) {
     md_float initDelta[AUTO_VEC_PACK_SIZE] = {};
     AUTO_VEC_LOOP(i) initDelta[i] = scale*i;
 
+    // Limit for vectorized operations
+    const int xLimit = WIDTH - WIDTH % AUTO_VEC_PACK_SIZE;
+
+
     for (int iy = 0; iy < HEIGHT; iy++) {
         const md_float y0_single = centerY + (HEIGHT / 2 - iy) * scale;
 
         md_float y0[AUTO_VEC_PACK_SIZE] = {};
         AUTO_VEC_LOOP(index) y0[index] = y0_single;
 
-        for (int ix = 0; ix < WIDTH; ix += AUTO_VEC_PACK_SIZE) {
+        // Processing row of pixels
+        // 1. Loop unrolling with size AUTO_VEC_PACK_SIZE
+        // 2. Processing rest of the pixels like in naive implementation
+        for (int ix = 0; ix < xLimit; ix += AUTO_VEC_PACK_SIZE) {
             const md_float x0_start = centerX - scale*WIDTH / 2 + ix*scale;
 
             md_float x0[AUTO_VEC_PACK_SIZE] = {};
@@ -590,6 +615,28 @@ int calculateMandelbrotAutoVec(const mdContext_t md) {
             const int writeOffset = iy*WIDTH + ix;
             AUTO_VEC_LOOP(index) escapeN[writeOffset + index] = escapeIter[index];
         }
+
+        // Rest of the pixels in a row
+        for (int ix = xLimit; ix < WIDTH; ix++) {
+            const md_float x0 = centerX - scale*WIDTH / 2 + ix*scale;
+
+            md_float x = x0, y = y0_single;
+            int iteration = 0;
+            for (; iteration < maxIter; iteration++) {
+                md_float x2   = x * x,
+                            y2   = y * y,
+                            xy_2 = x * y * 2.0;
+
+                    if (x2 + y2 > ESCAPE_RADIUS2)
+                        break;
+
+                    x = x2 - y2 + x0;
+                    y = xy_2    + y0_single;
+            }
+
+            escapeN[iy*WIDTH + ix] = iteration;    
+        }
+        
     }
 
     return 0;

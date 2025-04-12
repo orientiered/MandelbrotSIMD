@@ -2,11 +2,7 @@ CFLAGS = -D _DEBUG -ggdb3 -std=c++17 -Og -march=native -Wall -Wextra -Weffc++ -W
 
 CFLAGS_RELEASE = -O3 -DNDEBUG -march=native
 
-<<<<<<< HEAD
-LINK_LIBS	:= sfml-graphics sfml-window sfml-system
-=======
 ASAN_FLAGS = -fsized-deallocation -fstack-protector -fstrict-overflow -fno-omit-frame-pointer -Wlarger-than=8192 -Wstack-usage=8192 -pie -fPIE -Werror=vla -fsanitize=address,alignment,bool,bounds,enum,float-cast-overflow,float-divide-by-zero,integer-divide-by-zero,leak,nonnull-attribute,null,object-size,return,returns-nonnull-attribute,shift,signed-integer-overflow,undefined,unreachable,vla-bound,vptr
->>>>>>> master
 
 LINK_LIBS	:= sfml-graphics sfml-window sfml-system
 
@@ -44,9 +40,15 @@ $(BUILD_DIR)metrics.o: $(SRC_DIR)metrics.cpp ./include/mandelbrot.h
 	$(CC) $(CFLAGS) -c $< -o$@ -D'_COMPILER="$(CC)"' -D'_COMPILE_FLAGS="$(CFLAGS)"'
 
 
-.PHONY:clean disasm
+.PHONY:clean disasm compile_commands
 
 disasm:
 	objdump -Mintel -D --visualize-jumps mandelbrot.exe > mandelbrot.disasm
+
 clean:
 	rm build/*
+
+compile_commands:
+	make clean
+	bear -- make BUILD=DEBUG ASAN=1
+	
