@@ -80,11 +80,29 @@ int mdContextResize(mdContext_t *md, int WIDTH, int HEIGHT) {
         HEIGHT = -HEIGHT;
     }
 
+
+    uint32_t *oldScreen = md->screen,
+             *oldEscapeN   = md->escapeN;
+
+    if (md->thrdPool) {
+        md->thrdPool->mtx.lock();
+        md->thrdPool->currentAvailableLine = 2*HEIGHT;
+        md->thrdPool->mtx.unlock();
+    }
+
     md->screen  = (uint32_t *) realloc(md->screen,  WIDTH*HEIGHT * sizeof(uint32_t));
     md->escapeN = (uint32_t *) realloc(md->escapeN, WIDTH*HEIGHT * sizeof(uint32_t));
 
+DBG(if (oldScreen != md->screen)
+        printf("Screen reallocated\n");
+
+    if (oldEscapeN != md->escapeN)
+        printf("escapeN reallocated\n");)   
+
     md->WIDTH  = WIDTH;
     md->HEIGHT = HEIGHT;
+
+
 
     return 0;
 }
@@ -555,10 +573,11 @@ int calculateMandelbrotThreaded(const mdContext_t md) {
 
         }
         // fprintf(stderr, "\n");
-        MANDELBROT_DUMMY_GLOBAL *= 2;
         if (rendered) {
             break;
         }
+
+        MANDELBROT_DUMMY_GLOBAL *= 2;
     }
 
     // fprintf(stderr, "Frame is done\n");

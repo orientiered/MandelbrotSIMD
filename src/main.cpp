@@ -71,13 +71,29 @@ int main(int argc, const char *argv[]) {
     sf::Time totalRenderTime = sf::microseconds(0);
 
     while (context.window.isOpen()) {
+        
+    DBG(for (int i = 0; i < THREAD_POOL_SIZE; i++) {
+            if (md.thrdPool->thrdStatus[i] != MD_THREAD_WAITING)
+                fprintf(stderr, "Attention! Thread #%d is not waiting!\n", i+1);
+        })
+
         windowHandleEvents(&context, &md);
 
+
+    DBG(for (int i = 0; i < THREAD_POOL_SIZE; i++) {
+            if (md.thrdPool->thrdStatus[i] != MD_THREAD_WAITING)
+                fprintf(stderr, "Warning! Thread #%d is not waiting!\n", i+1);
+        })
         /*=================================*/
         sf::Time t1 = clock.getElapsedTime();
         mandelbrotRenderer(md);
         sf::Time t2 = clock.getElapsedTime();
         /*=================================*/
+        
+    DBG(for (int i = 0; i < THREAD_POOL_SIZE; i++) {
+            if (md.thrdPool->thrdStatus[i] != MD_THREAD_WAITING)
+                fprintf(stderr, "Ahtung! Thread #%d is not waiting!\n", i+1);
+        })
 
         convertItersToColor(md);
         windowDraw(&context, md);

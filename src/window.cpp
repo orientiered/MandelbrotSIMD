@@ -162,7 +162,7 @@ int windowHandleEvents(windowContext_t *context, mdContext_t *md) {
 }
 
 static int windowHandleResize(windowContext_t *context, mdContext_t *md, const sf::Event::SizeEvent newSize) {
-    fprintf(stderr, "Resize: %d %d\n", newSize.width, newSize.height);
+DBG(fprintf(stderr, "Resize: %d %d\n", newSize.width, newSize.height);)
 
     mdContextResize(md, newSize.width, newSize.height);
 

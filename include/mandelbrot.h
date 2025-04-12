@@ -5,6 +5,12 @@
 #include <thread>
 #include <mutex>
 
+#ifndef NDEBUG
+    #define DBG(...) __VA_ARGS__
+#else
+    #define DBG(...)  
+#endif
+
 /*================================= IMPORTANT CONSTANTS ============================================*/
 
 /// @brief Uncomment type you want to use
